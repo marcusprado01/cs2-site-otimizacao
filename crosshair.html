@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Gerador de mira (crosshair) do CS2 com preview em tempo real: ajuste tamanho, espessura, cor, contorno e dot e gere o share code CSGO- na hora. Importe e edite qualquer código. Processado localmente.">
+<meta name="theme-color" content="#0d0f12">
+<meta name="color-scheme" content="dark">
+<title>Gerador de Mira CS2 — Crosshair</title>
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Gerador de Mira CS2">
+<meta property="og:description" content="Crie, edite e exporte miras do CS2 com preview em tempo real e share code CSGO-.">
+<meta property="og:locale" content="pt_BR">
+
+<!-- Favicon SVG inline -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230d0f12'/><circle cx='16' cy='16' r='2' fill='%2300e57a'/><path d='M16 4v6M16 22v6M4 16h6M22 16h6' stroke='%2300e57a' stroke-width='2.5' stroke-linecap='round'/></svg>">
+
+<!-- Fontes não-bloqueantes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --border: #252a3a;
+    --border2: #2e3550;
+    --green: #00e57a;
+    --green-dim: #00e57a22;
+    --green-text: #00c96c;
+    --text: #e8eaf0;
+    --text2: #8892a4;
+    --text3: #808a9e;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+  a { color: var(--green-text); text-decoration: none; }
+  a:hover { color: var(--green); }
+
+  header { padding: 2.2rem 2rem 1.5rem; max-width: 1000px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+  .nav { font-family: var(--mono); font-size: 12px; margin-bottom: 1rem; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--green-text); text-transform: uppercase; margin-bottom: .6rem; }
+  h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 600; line-height: 1.15; letter-spacing: -.02em; color: #fff; }
+  h1 span { color: var(--green); }
+  .sub { margin-top: .5rem; color: var(--text2); font-size: 14px; max-width: 560px; }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+
+  .layout { display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
+
+  /* PREVIEW (sticky) */
+  .preview-col { position: sticky; top: 1rem; }
+  .preview-wrap { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 16px; }
+  canvas#preview { width: 100%; height: auto; border-radius: 8px; display: block; image-rendering: pixelated; background: #1a1d26; }
+  .bg-swatches { display: flex; gap: 8px; margin-top: 12px; }
+  .bg-swatches button { flex: 1; height: 30px; border: 1px solid var(--border2); border-radius: 6px; cursor: pointer; }
+  .bg-swatches button.active { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+
+  .out-block { margin-top: 16px; }
+  .out-label { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+  .code-row { display: flex; gap: 8px; }
+  .code-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); color: var(--green); font-family: var(--mono); font-size: 12px; padding: 9px 10px; border-radius: 6px; outline: none; }
+  .btn-copy { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); font-family: var(--mono); font-size: 11px; padding: 0 14px; border-radius: 6px; cursor: pointer; white-space: nowrap; transition: all .15s; }
+  .btn-copy:hover { border-color: var(--green); color: var(--green); }
+  .btn-copy.copied { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+  textarea#convars { width: 100%; height: 150px; background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); font-family: var(--mono); font-size: 11px; padding: 10px; border-radius: 6px; outline: none; resize: vertical; line-height: 1.5; }
+
+  /* CONTROLS */
+  .section-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--text3); text-transform: uppercase; margin: 0 0 1rem; padding-bottom: .4rem; border-bottom: 1px solid var(--border); }
+  .form-section { margin-bottom: 1.8rem; }
+
+  .ctrl { margin-bottom: 14px; }
+  .ctrl-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .ctrl label { font-size: 13px; color: var(--text2); }
+  .ctrl .v { font-family: var(--mono); font-size: 12px; color: var(--green); }
+  input[type="range"] { width: 100%; accent-color: var(--green); height: 4px; cursor: pointer; }
+  select { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: var(--sans); font-size: 13px; padding: 9px 10px; border-radius: 6px; outline: none; cursor: pointer; }
+  select:focus { border-color: var(--green); }
+
+  .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); cursor: pointer; }
+  .toggle input { accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; }
+
+  .import-row { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .import-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 12px; padding: 9px 10px; border-radius: 6px; outline: none; }
+  .import-row input:focus { border-color: var(--green); }
+  .btn { background: var(--green); color: #050f08; font-family: var(--sans); font-weight: 600; font-size: 13px; padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { opacity: .9; }
+  .import-err { color: #ff6b6b; font-size: 12px; margin-top: -1rem; margin-bottom: 1.5rem; min-height: 1em; }
+
+  .rgb-row { display: none; align-items: center; gap: 10px; margin-top: 8px; }
+  .rgb-row.show { display: flex; }
+  .rgb-row input[type="color"] { width: 44px; height: 32px; border: 1px solid var(--border2); border-radius: 6px; background: var(--surface2); cursor: pointer; padding: 2px; }
+  .rgb-row .rgb-val { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+
+  /* PRESETS */
+  .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .preset { background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 12px; cursor: pointer; text-align: left; transition: border-color .15s; }
+  .preset:hover { border-color: var(--green); }
+  .preset .p-name { font-size: 13px; color: var(--text); font-weight: 500; }
+  .preset .p-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  .note-card { background: var(--surface); border: 1px dashed var(--border2); border-radius: 8px; padding: 14px 16px; font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .note-card strong { color: var(--text); }
+
+  footer { border-top: 1px solid var(--border); max-width: 1000px; margin: 0 auto; padding: 1.5rem 2rem; font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+  @media (max-width: 760px) {
+    header, main, footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .layout { grid-template-columns: 1fr; }
+    .preview-col { position: static; }
+    canvas#preview { max-width: 300px; margin: 0 auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav"><a href="index.html">← Configurador de performance</a></div>
+  <div class="eyebrow">Counter-Strike 2</div>
+  <h1>Gerador de <span>Mira</span></h1>
+  <p class="sub">Ajuste a mira e veja o resultado em tempo real. Importe ou exporte o <strong>share code</strong> (<code>CSGO-…</code>) e copie os comandos de console. Tudo processado localmente, sem envio de dados.</p>
+</header>
+
+<main>
+  <div class="layout">
+
+    <!-- PREVIEW + OUTPUT -->
+    <div class="preview-col">
+      <div class="preview-wrap">
+        <canvas id="preview" width="300" height="300"></canvas>
+        <div class="bg-swatches" id="bg-swatches">
+          <button data-bg="#1a1d26" style="background:#1a1d26" title="Escuro"></button>
+          <button data-bg="#3a4a3a" style="background:#3a4a3a" title="Mapa"></button>
+          <button data-bg="#7a7f88" style="background:#7a7f88" title="Claro"></button>
+          <button data-bg="#c9b18a" style="background:#c9b18a" title="Areia"></button>
+        </div>
+
+        <div class="out-block">
+          <div class="out-label">Share code</div>
+          <div class="code-row">
+            <input id="sharecode" readonly>
+            <button class="btn-copy" id="copy-code" onclick="copyText('sharecode', this)">copiar</button>
+          </div>
+        </div>
+
+        <div class="out-block">
+          <div class="out-label">Comandos de console</div>
+          <textarea id="convars" readonly></textarea>
+          <div class="code-row" style="margin-top:8px">
+            <button class="btn-copy" id="copy-cvars" onclick="copyText('convars', this)" style="flex:1; padding:8px">copiar comandos</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls-col">
+
+      <div class="form-section">
+        <div class="section-label">Importar mira</div>
+        <div class="import-row">
+          <input id="import-code" placeholder="Cole um share code (CSGO-…)">
+          <button class="btn" onclick="importCode()">Importar</button>
+        </div>
+        <div class="import-err" id="import-err"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-label">Ajustes</div>
+
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="c-style">Estilo</label></div>
+          <select id="c-style">
+            <option value="0">0 — Padrão</option>
+            <option value="1">1 — Padrão estático</option>
+            <option value="2">2 — Clássico</option>
+            <option value="3">3 — Clássico dinâmico</option>
+            <option value="4" selected>4 — Clássico estático</option>
+            <option value="5">5 — Clássico estático (alt)</option>
+          </select>
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="c-length">Tamanho</label><span class="v" id="v-length">3</span></div>
+          <input type="range" id="c-length" min="0" max="10" step="0.5" value="3">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="c-thickness">Espessura</label><span class="v" id="v-thickness">1</span></div>
+          <input type="range" id="c-thickness" min="0" max="6" step="0.1" value="1">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="c-gap">Espaçamento (gap)</label><span class="v" id="v-gap">-2</span></div>
+          <input type="range" id="c-gap" min="-5" max="5" step="0.5" value="-2">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="c-outline">Contorno (largura)</label><span class="v" id="v-outline">1</span></div>
+          <input type="range" id="c-outline" min="0" max="3" step="0.5" value="1">
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="c-alpha">Opacidade (alpha)</label><span class="v" id="v-alpha">255</span></div>
+          <input type="range" id="c-alpha" min="0" max="255" step="1" value="255">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-label">Cor</div>
+        <div class="ctrl">
+          <select id="c-color">
+            <option value="0">Vermelho</option>
+            <option value="1">Verde</option>
+            <option value="2">Amarelo</option>
+            <option value="3">Azul claro</option>
+            <option value="4">Azul</option>
+            <option value="5" selected>Personalizada (RGB)</option>
+          </select>
+          <div class="rgb-row show" id="rgb-row">
+            <input type="color" id="c-rgb" value="#00ff00">
+            <span class="rgb-val" id="rgb-val">rgb(0, 255, 0)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-label">Opções</div>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="c-dot"> Dot central</label>
+          <label class="toggle"><input type="checkbox" id="c-t"> Estilo T</label>
+          <label class="toggle"><input type="checkbox" id="c-outline-en" checked> Contorno</label>
+          <label class="toggle"><input type="checkbox" id="c-alpha-en" checked> Usar alpha</label>
+          <label class="toggle"><input type="checkbox" id="c-recoil"> Seguir recuo</label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-label">Presets</div>
+        <div class="presets" id="presets"></div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-label">Miras dos pros — Top 10 HLTV</div>
+        <div id="pro-list"></div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer>cs2-crosshair-generator — codec compatível com CS2/CS:GO · gerado localmente</footer>
+
+<script>
+// ===== Codec do share code (portado de akiver/csgo-sharecode, validado por round-trip) =====
+const DICTIONARY = 'ABCDEFGHJKLMNOPQRSTUVWXYZabcdefhijkmnopqrstuvwxyz23456789';
+const DL = BigInt(DICTIONARY.length);
+const SHARECODE_PATTERN = /^CSGO(-?[\w]{5}){5}$/;
+
+const hex2 = b => ('0' + (b & 0xff).toString(16)).slice(-2);
+const bytesToHex = bs => bs.map(hex2).join('');
+const stringToBytes = s => { const b = []; for (let i = 0; i < s.length; i += 2) b.push(parseInt(s.slice(i, i + 2), 16)); return b; };
+const uint8ToInt8 = n => (n << 24) >> 24;
+const sumArray = a => a.reduce((p, v) => p + v, 0);
+
+function shareCodeToBytes(shareCode) {
+  if (!SHARECODE_PATTERN.test(shareCode)) throw new Error('Código inválido');
+  const code = shareCode.replace(/CSGO|-/g, '');
+  const chars = Array.from(code).reverse();
+  let big = 0n;
+  for (const c of chars) big = big * DL + BigInt(DICTIONARY.indexOf(c));
+  return stringToBytes(big.toString(16).padStart(36, '0'));
+}
+
+function bytesToShareCode(bytes) {
+  let total = BigInt('0x' + bytesToHex(bytes));
+  let chars = '';
+  for (let i = 0; i < 25; i++) { chars += DICTIONARY[Number(total % DL)]; total /= DL; }
+  return `CSGO-${chars.slice(0,5)}-${chars.slice(5,10)}-${chars.slice(10,15)}-${chars.slice(15,20)}-${chars.slice(20,25)}`;
+}
+
+function decodeCrosshair(shareCode) {
+  const b = shareCodeToBytes(shareCode);
+  if (b[0] !== sumArray(b.slice(1)) % 256) throw new Error('Checksum inválido');
+  return {
+    gap: uint8ToInt8(b[2]) / 10,
+    outline: b[3] / 2,
+    red: b[4], green: b[5], blue: b[6], alpha: b[7],
+    splitDistance: b[8] & 7,
+    followRecoil: ((b[8] >> 4) & 8) === 8,
+    fixedCrosshairGap: uint8ToInt8(b[9]) / 10,
+    color: b[10] & 7,
+    outlineEnabled: (b[10] & 8) === 8,
+    innerSplitAlpha: (b[10] >> 4) / 10,
+    outerSplitAlpha: (b[11] & 0xf) / 10,
+    splitSizeRatio: (b[11] >> 4) / 10,
+    thickness: b[12] / 10,
+    centerDotEnabled: ((b[13] >> 4) & 1) === 1,
+    deployedWeaponGapEnabled: ((b[13] >> 4) & 2) === 2,
+    alphaEnabled: ((b[13] >> 4) & 4) === 4,
+    tStyleEnabled: ((b[13] >> 4) & 8) === 8,
+    style: (b[13] & 0xf) >> 1,
+    length: b[14] / 10,
+  };
+}
+
+function encodeCrosshair(c) {
+  const r = Math.round;
+  const b = [
+    0, 1,
+    r(c.gap * 10) & 0xff,
+    r(c.outline * 2),
+    r(c.red), r(c.green), r(c.blue), r(c.alpha),
+    (r(c.splitDistance) & 7) | (Number(c.followRecoil) << 7),
+    r(c.fixedCrosshairGap * 10) & 0xff,
+    (r(c.color) & 7) | (Number(c.outlineEnabled) << 3) | (r(c.innerSplitAlpha * 10) << 4),
+    r(c.outerSplitAlpha * 10) | (r(c.splitSizeRatio * 10) << 4),
+    r(c.thickness * 10),
+    (r(c.style) << 1) | (Number(c.centerDotEnabled) << 4) | (Number(c.deployedWeaponGapEnabled) << 5) | (Number(c.alphaEnabled) << 6) | (Number(c.tStyleEnabled) << 7),
+    r(c.length * 10),
+    0, 0, 0,
+  ];
+  b[0] = sumArray(b) & 0xff;
+  return bytesToShareCode(b);
+}
+
+function toConVars(c) {
+  const bit = v => Number(v);
+  return [
+    ['cl_crosshairstyle', c.style],
+    ['cl_crosshairsize', c.length],
+    ['cl_crosshairthickness', c.thickness],
+    ['cl_crosshairgap', c.gap],
+    ['cl_crosshair_drawoutline', bit(c.outlineEnabled)],
+    ['cl_crosshair_outlinethickness', c.outline],
+    ['cl_crosshairdot', bit(c.centerDotEnabled)],
+    ['cl_crosshair_t', bit(c.tStyleEnabled)],
+    ['cl_crosshaircolor', c.color],
+    ['cl_crosshaircolor_r', c.red],
+    ['cl_crosshaircolor_g', c.green],
+    ['cl_crosshaircolor_b', c.blue],
+    ['cl_crosshairusealpha', bit(c.alphaEnabled)],
+    ['cl_crosshairalpha', c.alpha],
+    ['cl_crosshair_recoil', bit(c.followRecoil)],
+    ['cl_crosshairgap_useweaponvalue', bit(c.deployedWeaponGapEnabled)],
+    ['cl_fixedcrosshairgap', c.fixedCrosshairGap],
+    ['cl_crosshair_dynamic_splitdist', c.splitDistance],
+    ['cl_crosshair_dynamic_splitalpha_innermod', c.innerSplitAlpha],
+    ['cl_crosshair_dynamic_splitalpha_outermod', c.outerSplitAlpha],
+    ['cl_crosshair_dynamic_maxdist_splitratio', c.splitSizeRatio],
+  ].map(([k, v]) => `${k} "${v}"`).join('\n');
+}
+
+// ===== Estado =====
+const COLORS = { 0: '#ff3030', 1: '#3dff5a', 2: '#ffe23d', 3: '#3db0ff', 4: '#3a6bff' };
+
+const s = {
+  gap: -2, outline: 1, red: 0, green: 255, blue: 0, alpha: 255,
+  splitDistance: 7, followRecoil: false, fixedCrosshairGap: 0,
+  color: 5, outlineEnabled: true, innerSplitAlpha: 1, outerSplitAlpha: 0.5,
+  splitSizeRatio: 0.3, thickness: 1, centerDotEnabled: false,
+  deployedWeaponGapEnabled: false, alphaEnabled: true, tStyleEnabled: false,
+  style: 4, length: 3,
+};
+
+let bgColor = '#1a1d26';
+
+// ===== Preview (canvas, tempo real) — geometria aproximada =====
+function drawCrosshair() {
+  const cv = document.getElementById('preview');
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+
+  const cx = cv.width / 2, cy = cv.height / 2;
+  const t = Math.max(1, Math.round(s.thickness * 2.2));
+  const L = Math.round(s.length * 6) + 2;
+  const gap = Math.max(0, Math.round(s.gap * 4) + 8);
+  const half = Math.round(t / 2);
+  const col = s.color === 5 ? `rgb(${s.red},${s.green},${s.blue})` : (COLORS[s.color] || '#3dff5a');
+  const a = s.alphaEnabled ? s.alpha / 255 : 1;
+  const op = s.outlineEnabled ? Math.max(1, Math.round(s.outline)) : 0;
+
+  const rects = [
+    [cx - gap - L, cy - half, L, t],
+    [cx + gap, cy - half, L, t],
+    [cx - half, cy + gap, t, L],
+  ];
+  if (!s.tStyleEnabled) rects.push([cx - half, cy - gap - L, t, L]);
+  if (s.centerDotEnabled) rects.push([cx - half, cy - half, t, t]);
+
+  if (op > 0) {
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#000';
+    for (const [x, y, w, h] of rects) ctx.fillRect(Math.round(x - op), Math.round(y - op), w + op * 2, h + op * 2);
+  }
+  ctx.globalAlpha = a;
+  ctx.fillStyle = col;
+  for (const [x, y, w, h] of rects) ctx.fillRect(Math.round(x), Math.round(y), w, h);
+  ctx.globalAlpha = 1;
+}
+
+function refresh() {
+  drawCrosshair();
+  let code = '';
+  try { code = encodeCrosshair(s); } catch (e) { code = '— erro ao gerar —'; }
+  document.getElementById('sharecode').value = code;
+  document.getElementById('convars').value = toConVars(s);
+}
+
+// ===== Sincroniza controles -> UI a partir de s =====
+function syncControls() {
+  const set = (id, v) => { document.getElementById(id).value = v; };
+  const chk = (id, v) => { document.getElementById(id).checked = v; };
+  set('c-style', s.style);
+  set('c-length', s.length); document.getElementById('v-length').textContent = s.length;
+  set('c-thickness', s.thickness); document.getElementById('v-thickness').textContent = s.thickness;
+  set('c-gap', s.gap); document.getElementById('v-gap').textContent = s.gap;
+  set('c-outline', s.outline); document.getElementById('v-outline').textContent = s.outline;
+  set('c-alpha', s.alpha); document.getElementById('v-alpha').textContent = s.alpha;
+  set('c-color', s.color);
+  chk('c-dot', s.centerDotEnabled);
+  chk('c-t', s.tStyleEnabled);
+  chk('c-outline-en', s.outlineEnabled);
+  chk('c-alpha-en', s.alphaEnabled);
+  chk('c-recoil', s.followRecoil);
+  const hex = '#' + [s.red, s.green, s.blue].map(n => ('0' + (n & 0xff).toString(16)).slice(-2)).join('');
+  document.getElementById('c-rgb').value = hex;
+  document.getElementById('rgb-val').textContent = `rgb(${s.red}, ${s.green}, ${s.blue})`;
+  document.getElementById('rgb-row').classList.toggle('show', Number(s.color) === 5);
+}
+
+// ===== Bindings =====
+function bindRange(id, field, valId) {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    s[field] = parseFloat(el.value);
+    if (valId) document.getElementById(valId).textContent = el.value;
+    refresh();
+  });
+}
+function bindToggle(id, field) {
+  const el = document.getElementById(id);
+  el.addEventListener('change', () => { s[field] = el.checked; refresh(); });
+}
+
+bindRange('c-length', 'length', 'v-length');
+bindRange('c-thickness', 'thickness', 'v-thickness');
+bindRange('c-gap', 'gap', 'v-gap');
+bindRange('c-outline', 'outline', 'v-outline');
+bindRange('c-alpha', 'alpha', 'v-alpha');
+bindToggle('c-dot', 'centerDotEnabled');
+bindToggle('c-t', 'tStyleEnabled');
+bindToggle('c-outline-en', 'outlineEnabled');
+bindToggle('c-alpha-en', 'alphaEnabled');
+bindToggle('c-recoil', 'followRecoil');
+
+document.getElementById('c-style').addEventListener('change', e => { s.style = parseInt(e.target.value); refresh(); });
+document.getElementById('c-color').addEventListener('change', e => {
+  s.color = parseInt(e.target.value);
+  document.getElementById('rgb-row').classList.toggle('show', s.color === 5);
+  refresh();
+});
+document.getElementById('c-rgb').addEventListener('input', e => {
+  const hex = e.target.value;
+  s.red = parseInt(hex.slice(1, 3), 16);
+  s.green = parseInt(hex.slice(3, 5), 16);
+  s.blue = parseInt(hex.slice(5, 7), 16);
+  s.color = 5;
+  document.getElementById('c-color').value = '5';
+  document.getElementById('rgb-row').classList.add('show');
+  document.getElementById('rgb-val').textContent = `rgb(${s.red}, ${s.green}, ${s.blue})`;
+  refresh();
+});
+
+document.querySelectorAll('#bg-swatches button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    bgColor = btn.dataset.bg;
+    document.querySelectorAll('#bg-swatches button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    drawCrosshair();
+  });
+});
+
+function importCode() {
+  const errEl = document.getElementById('import-err');
+  const code = document.getElementById('import-code').value.trim();
+  errEl.textContent = '';
+  if (!code) { errEl.textContent = 'Cole um share code primeiro.'; return; }
+  try {
+    Object.assign(s, decodeCrosshair(code));
+    syncControls();
+    refresh();
+  } catch (e) {
+    errEl.textContent = e.message + ' — verifique o código.';
+  }
+}
+
+function copyText(id, btn) {
+  navigator.clipboard.writeText(document.getElementById(id).value).then(() => {
+    const prev = btn.textContent;
+    btn.textContent = 'copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = prev; btn.classList.remove('copied'); }, 1600);
+  });
+}
+
+// ===== Presets (clássicos, não atribuídos a jogadores) =====
+const PRESETS = [
+  { name: 'Clássico', desc: 'verde, estático', p: { style: 4, length: 3, thickness: 1, gap: -2, color: 5, red: 0, green: 255, blue: 0, outlineEnabled: true, outline: 1, centerDotEnabled: false, tStyleEnabled: false, alphaEnabled: true, alpha: 255 } },
+  { name: 'Dot mínimo', desc: 'só o ponto central', p: { style: 4, length: 0, thickness: 1.5, gap: -5, color: 5, red: 0, green: 255, blue: 0, outlineEnabled: true, outline: 1, centerDotEnabled: true, tStyleEnabled: false, alphaEnabled: true, alpha: 255 } },
+  { name: 'Cyan fino', desc: 'longo e discreto', p: { style: 4, length: 5, thickness: 0.5, gap: -3, color: 4, outlineEnabled: true, outline: 1, centerDotEnabled: false, tStyleEnabled: false, alphaEnabled: true, alpha: 200 } },
+  { name: 'T-style', desc: 'sem linha superior', p: { style: 4, length: 4, thickness: 1.2, gap: -1, color: 5, red: 0, green: 255, blue: 255, outlineEnabled: true, outline: 1, centerDotEnabled: false, tStyleEnabled: true, alphaEnabled: true, alpha: 255 } },
+  { name: 'Amarelo grosso', desc: 'alta visibilidade', p: { style: 4, length: 4, thickness: 2, gap: 0, color: 2, outlineEnabled: true, outline: 1, centerDotEnabled: true, tStyleEnabled: false, alphaEnabled: true, alpha: 255 } },
+];
+
+function applyPreset(p) {
+  Object.assign(s, p);
+  syncControls();
+  refresh();
+}
+
+document.getElementById('presets').innerHTML = PRESETS.map((pr, i) =>
+  `<button class="preset" data-i="${i}"><div class="p-name">${pr.name}</div><div class="p-desc">${pr.desc}</div></button>`
+).join('');
+document.querySelectorAll('#presets .preset').forEach(btn =>
+  btn.addEventListener('click', () => applyPreset(PRESETS[btn.dataset.i].p))
+);
+
+// ===== Miras dos pros (top 10 HLTV) — data-driven, preenchido após confirmação dos dados =====
+// Formato: { team: 'Vitality', player: 'ZywOo', code: 'CSGO-...' }
+const PRO_CROSSHAIRS = [];
+
+function renderPros() {
+  const el = document.getElementById('pro-list');
+  if (!PRO_CROSSHAIRS.length) {
+    el.innerHTML = `<div class="note-card">⏳ <strong>Em breve:</strong> miras atuais dos players principais do top 10 do HLTV. Aguardando confirmação do ranking e dos share codes — quando preenchido, cada pro vira um preset clicável aqui. Por ora, cole qualquer share code no campo <em>Importar mira</em> acima.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="presets">${PRO_CROSSHAIRS.map((pro, i) =>
+    `<button class="preset" data-pi="${i}"><div class="p-name">${pro.player}</div><div class="p-desc">${pro.team}</div></button>`
+  ).join('')}</div>`;
+  el.querySelectorAll('.preset').forEach(btn => btn.addEventListener('click', () => {
+    try { Object.assign(s, decodeCrosshair(PRO_CROSSHAIRS[btn.dataset.pi].code)); syncControls(); refresh(); } catch (e) {}
+  }));
+}
+renderPros();
+
+// ===== Init =====
+document.querySelector('#bg-swatches button').classList.add('active');
+syncControls();
+refresh();
+</script>
+</body>
+</html>
