@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NVCP CS2 — Configurador</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f12;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --border: #252a3a;
+    --border2: #2e3550;
+    --green: #00e57a;
+    --green-dim: #00e57a22;
+    --green-text: #00c96c;
+    --amber: #f5a623;
+    --amber-dim: #f5a62318;
+    --red: #ff4c4c;
+    --red-dim: #ff4c4c18;
+    --text: #e8eaf0;
+    --text2: #8892a4;
+    --text3: #535c70;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* HEADER */
+  header {
+    padding: 3rem 2rem 2rem;
+    max-width: 860px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--green-text);
+    text-transform: uppercase;
+    margin-bottom: .75rem;
+  }
+
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    color: #fff;
+  }
+
+  h1 span { color: var(--green); }
+
+  .sub {
+    margin-top: .6rem;
+    color: var(--text2);
+    font-size: 14px;
+    max-width: 520px;
+  }
+
+  /* MAIN */
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 2rem 4rem;
+  }
+
+  /* FORM SECTION */
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 5px;
+  }
+
+  .field select, .field input[type="text"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+
+  .field select:focus, .field input[type="text"]:focus {
+    border-color: var(--green);
+  }
+
+  .field input::placeholder { color: var(--text3); }
+
+  /* GENERATE BTN */
+  .btn-generate {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--green);
+    color: #050f08;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 24px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    margin-top: 1.5rem;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn-generate:hover { opacity: .9; }
+  .btn-generate:active { transform: scale(.98); }
+
+  /* RESULTS */
+  #results { display: none; margin-top: 2.5rem; }
+  #results.show { display: block; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .results-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+
+  .results-title strong { color: var(--text); }
+
+  .btn-copy {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .15s;
+    letter-spacing: .04em;
+  }
+  .btn-copy:hover { border-color: var(--green); color: var(--green); }
+  .btn-copy.copied { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+  /* TABLE */
+  .config-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 2rem;
+  }
+
+  .config-table thead tr {
+    background: var(--surface2);
+  }
+
+  .config-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border2);
+  }
+
+  .config-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .config-table tr:last-child td { border-bottom: none; }
+
+  .config-table tr:hover td { background: var(--surface2); }
+
+  .setting-name {
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  .setting-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .val-key   { color: var(--green);  background: var(--green-dim);  padding: 2px 8px; border-radius: 4px; }
+  .val-off   { color: var(--text2);  background: #ffffff0a;          padding: 2px 8px; border-radius: 4px; }
+  .val-warn  { color: var(--amber);  background: var(--amber-dim);   padding: 2px 8px; border-radius: 4px; }
+  .val-incompat { color: var(--text3); font-style: italic; font-family: var(--sans); font-size: 12px; }
+
+  .impact-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+
+  .impact-cell {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .dot-high   { background: var(--green); }
+  .dot-medium { background: var(--amber); }
+  .dot-low    { background: var(--text3); }
+
+  .note-cell {
+    font-size: 11px;
+    color: var(--text2);
+    max-width: 220px;
+  }
+
+  /* SECTIONS */
+  .section-block {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-block-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--green-text);
+    margin-bottom: .75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-block-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* LAUNCH OPTIONS */
+  .launch-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    letter-spacing: .01em;
+    word-break: break-all;
+    line-height: 1.8;
+  }
+
+  /* FPS ESTIMATE */
+  .fps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: .5rem;
+  }
+
+  .fps-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .fps-card .fps-label {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .fps-card .fps-value {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  .fps-card .fps-map {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  /* TIPS */
+  .tip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+
+  .tip strong { color: var(--text); font-weight: 500; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+
+  @media (max-width: 600px) {
+    header, main, footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .config-table th:nth-child(3), .config-table td:nth-child(3),
+    .config-table th:nth-child(4), .config-table td:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Nvidia Control Panel</div>
+  <h1>Configurador <span>CS2</span></h1>
+  <p class="sub">Preencha sua configuração de hardware e receba todas as opções do painel de controle Nvidia, launch options e estimativa de FPS.</p>
+</header>
+
+<main>
+  <!-- FORM -->
+  <div class="form-section">
+    <div class="section-label">GPU</div>
+    <div class="fields">
+      <div class="field">
+        <label>Série</label>
+        <select id="gpu_series">
+          <option value="rtx5">RTX 5000 (Blackwell)</option>
+          <option value="rtx4">RTX 4000 (Ada)</option>
+          <option value="rtx3" selected>RTX 3000 / RTX 2000 (Ampere / Turing)</option>
+          <option value="gtx16">GTX 1600 (Turing)</option>
+          <option value="gtx10">GTX 1000 (Pascal)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Modelo (ex: RTX 2060)</label>
+        <input type="text" id="gpu_model" placeholder="ex: RTX 2060">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="section-label">Monitor & Alvo</div>
+    <div class="fields">
+      <div class="field">
+        <label>Resolução</label>
+        <select id="res">
+          <option value="1280x960">1280x960 (4:3)</option>
+          <option value="1280x1024">1280x1024 (5:4)</option>
+          <option value="1920x1080">1920x1080 (16:9)</option>
+          <option value="2560x1440">2560x1440 (16:9)</option>
+          <option value="3840x2160">3840x2160 (4K)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Taxa de refresh</label>
+        <select id="hz">
+          <option value="60">60 Hz</option>
+          <option value="144" selected>144 Hz</option>
+          <option value="240">240 Hz</option>
+          <option value="360">360 Hz</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>CPU</label>
+        <select id="cpu">
+          <option value="amd">AMD Ryzen</option>
+          <option value="intel">Intel Core</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-generate" onclick="generate()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Gerar configuração
+  </button>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <div class="results-header">
+      <div class="results-title">Configuração para <strong id="res-title">—</strong></div>
+      <button class="btn-copy" id="copy-btn" onclick="copyAll()">[ copiar tudo ]</button>
+    </div>
+
+    <!-- NVCP TABLE -->
+    <div class="section-block">
+      <div class="section-block-title">Painel de controle Nvidia — Gerenciar configurações 3D</div>
+      <table class="config-table" id="nvcp-table">
+        <thead>
+          <tr>
+            <th>Recurso</th>
+            <th>Configuração recomendada</th>
+            <th>Impacto</th>
+            <th>Nota</th>
+          </tr>
+        </thead>
+        <tbody id="nvcp-body"></tbody>
+      </table>
+    </div>
+
+    <!-- LAUNCH OPTIONS -->
+    <div class="section-block">
+      <div class="section-block-title">Launch options — Steam</div>
+      <div class="launch-box" id="launch-box"></div>
+    </div>
+
+    <!-- FPS -->
+    <div class="section-block">
+      <div class="section-block-title">Estimativa de FPS</div>
+      <div class="fps-grid" id="fps-grid"></div>
+    </div>
+
+    <!-- TIPS -->
+    <div class="section-block">
+      <div class="section-block-title">Ajustes complementares</div>
+      <div id="tips-box"></div>
+    </div>
+
+  </div>
+</main>
+
+<footer>nvcp-cs2-optimizer — gerado localmente, sem envio de dados</footer>
+
+<script>
+const NVCP_BASE = [
+  { name: "Dimensionamento de imagem",              val: "Desligado",                      type: "off",    impact: "low",    note: "Não usar — adiciona latência" },
+  { name: "Anti-aliasing – FXAA",                   val: "Desligado",                      type: "off",    impact: "high",   note: "AA via driver mata FPS" },
+  { name: "Anti-aliasing – configuração",           val: "—",                              type: "incompat", impact: "low",  note: "Fica cinza quando FXAA = off" },
+  { name: "Anti-aliasing – correção do gama",       val: "Desligado",                      type: "off",    impact: "low",    note: "" },
+  { name: "Anti-aliasing – modo",                   val: "Aplicativo controlado",           type: "warn",   impact: "medium", note: "Deixa o CS2 decidir" },
+  { name: "Anti-aliasing – transparência",          val: "Desligado",                      type: "off",    impact: "low",    note: "" },
+  { name: "Buffering triplo",                       val: "Desligado",                      type: "off",    impact: "medium", note: "Só útil com VSync ligado" },
+  { name: "CUDA – GPUs",                            val: "Todas",                          type: "warn",   impact: "low",    note: "Sem efeito no CS2" },
+  { name: "CUDA – Política de retorno de memória",  val: "Padrão do driver",               type: "warn",   impact: "low",    note: "Relevante só para compute" },
+  { name: "Compatibilidade com OpenGL e GDI",       val: "Automático",                     type: "warn",   impact: "low",    note: "CS2 usa DX11, sem efeito" },
+  { name: "Filtragem anisotrópica",                 val: "Aplicativo controlado",           type: "warn",   impact: "medium", note: "" },
+  { name: "Filtragem da textura – Diferencial negativo", val: "Permitir",                  type: "warn",   impact: "low",    note: "" },
+  { name: "Filtragem da textura – otimização anisotrópica", val: "Desligado",              type: "off",    impact: "low",    note: "" },
+  { name: "Filtragem da textura – otimização trilinear",    val: "Desligado",              type: "off",    impact: "low",    note: "" },
+  { name: "Filtragem da textura – qualidade",       val: "Alto desempenho",                type: "key",    impact: "medium", note: "Prioriza performance sobre qualidade" },
+  { name: "GPU com renderização OpenGL",            val: "Seleção automática",             type: "warn",   impact: "low",    note: "" },
+  { name: "Modo de gerenciamento de energia",       val: "Prefira desempenho máximo",      type: "key",    impact: "high",   note: "Mantém clock máximo da GPU" },
+  { name: "Modo de latência baixa",                 val: "Ultra",                          type: "key",    impact: "high",   note: "Reduz input lag significativamente" },
+  { name: "Multi-Frame Sampled AA (MFAA)",          val: "Desligado",                      type: "off",    impact: "medium", note: "" },
+  { name: "Método atual Vulkan/OpenGL",             val: "Automático",                     type: "warn",   impact: "low",    note: "" },
+  { name: "Oclusão ambiental",                      val: "—",                              type: "incompat", impact: "low",  note: "Não compatível com CS2" },
+  { name: "Otimização segmentada",                  val: "Auto",                           type: "warn",   impact: "low",    note: "" },
+  { name: "Quadros pré-renderizados de RV",         val: "1",                              type: "key",    impact: "high",   note: "Reduz latência de render" },
+  { name: "Realidade Virtual – Superamostragem",    val: "—",                              type: "incompat", impact: "low",  note: "Não compatível" },
+  { name: "Sincronização vertical",                 val: "Desligado",                      type: "off",    impact: "high",   note: "Desligar = FPS ilimitado" },
+  { name: "Taxa Máxima de Quadros",                 val: "Desligado",                      type: "off",    impact: "high",   note: "Controle via +fps_max 0 no CS2" },
+  { name: "Taxa de atualização preferida",          val: "Mais alta disponível",           type: "key",    impact: "high",   note: "Garante uso do refresh máximo" },
+  { name: "Taxa máxima de quadros de aplicativo",   val: "Desligado",                      type: "off",    impact: "medium", note: "" },
+];
+
+function getLaunchOptions(hz, gpuSeries) {
+  let base = `-novid -nojoy -freq ${hz} -refresh ${hz} +fps_max 0 -console`;
+  if (gpuSeries === 'rtx3' || gpuSeries === 'rtx2' || gpuSeries === 'gtx16' || gpuSeries === 'gtx10') {
+    base += ' -allow_third_party_software';
+  }
+  return base;
+}
+
+function getFpsEstimate(res, gpuSeries) {
+  const maps = {
+    high:   { label: "Mapas abertos",   sub: "Dust2, Mirage" },
+    medium: { label: "Mapas densos",    sub: "Inferno, Ancient" },
+    low:    { label: "Smokes / fight",  sub: "pico de ação" },
+    avg:    { label: "Média geral",     sub: "competitivo" },
+  };
+
+  const table = {
+    // [high, medium, low, avg]
+    rtx5:  { "1280x960": ["600+","500+","400+","~500+"], "1920x1080": ["500+","400+","300+","~420"], "2560x1440": ["400+","300+","220+","~340"], "3840x2160": ["200+","160+","120+","~180"] },
+    rtx4:  { "1280x960": ["500+","380+","300+","~400"],  "1920x1080": ["400+","300+","220+","~330"], "2560x1440": ["300+","220+","160+","~250"], "3840x2160": ["150+","110+","80+", "~130"] },
+    rtx3:  { "1280x960": ["300–350","200–260","150–200","~220–280"], "1920x1080": ["220–280","160–200","120–160","~180–220"], "2560x1440": ["140–180","110–140","80–110","~120–160"], "3840x2160": ["70–90","55–70","40–55","~60–80"] },
+    gtx16: { "1280x960": ["200–250","150–200","120–160","~160–200"], "1920x1080": ["150–190","110–150","80–110","~120–160"], "2560x1440": ["90–120","70–95","55–75","~80–110"],  "3840x2160": ["40–55","30–45","25–35","~35–50"] },
+    gtx10: { "1280x960": ["160–200","120–160","90–130","~130–170"], "1920x1080": ["120–150","90–120","65–90","~100–130"],   "2560x1440": ["70–90","55–75","40–60","~60–85"],    "3840x2160": ["30–40","22–32","16–25","~25–35"] },
+  };
+
+  const row = table[gpuSeries]?.[res] || table['rtx3']['1920x1080'];
+  return [
+    { ...maps.high,   fps: row[0] },
+    { ...maps.medium, fps: row[1] },
+    { ...maps.low,    fps: row[2] },
+    { ...maps.avg,    fps: row[3] },
+  ];
+}
+
+function getTips(cpu, gpuSeries, res) {
+  const tips = [
+    { always: true,  text: "<strong>Windows — Modo de energia:</strong> Painel de controle → Opções de energia → Alto desempenho. Via cmd admin: <code>powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</code>" },
+    { always: true,  text: "<strong>XMP / EXPO na BIOS:</strong> Ativa o perfil XMP (Intel) ou EXPO (AMD) para rodar a RAM na frequência nominal — diferença real de FPS, especialmente em CPUs AMD." },
+    { always: true,  text: "<strong>Game DVR desativado:</strong> Win+G → Configurações → desativa tudo, ou regedit: <code>HKCU\\System\\GameConfigStore → GameDVR_Enabled = 0</code>" },
+    { always: true,  text: "<strong>CS2 autoexec.cfg:</strong> Adiciona <code>fps_max 0 | r_dynamic 0 | r_drawtracers_firstperson 0 | mat_queue_mode 2</code>" },
+    { cpu: 'amd',    text: "<strong>AMD específico:</strong> Ativa XMP/EXPO na BIOS. Desativa Cool'n'Quiet e Global C-state Control para reduzir latência de resposta dos cores." },
+    { cpu: 'intel',  text: "<strong>Intel específico:</strong> Desativa C-States e Speed Shift na BIOS se buscar latência mínima. Ativa XMP para DDR4/DDR5." },
+    { gpu: 'rtx3',   text: "<strong>Resizable BAR:</strong> Se a sua placa-mãe suportar, ativa Above 4G Decoding + Resizable BAR na BIOS — ganho de 5–15% no CS2." },
+    { gpu: 'rtx4',   text: "<strong>RTX 4000 — DLSS Frame Gen:</strong> Não use no CS2 competitivo. Adiciona latência de input que prejudica aim." },
+    { gpu: 'rtx5',   text: "<strong>RTX 5000 — DLSS 4 Multi Frame Gen:</strong> Não use no CS2 competitivo. Latência artificial afeta responsividade." },
+    { always: true,  text: "<strong>Driver Nvidia:</strong> Drivers 537.34, 551.23 ou 552.22 têm histórico mais estável no CS2. Pós-600 podem ter overhead maior. Usa DDU para reinstalar limpo se trocar versão." },
+  ];
+
+  return tips.filter(t => {
+    if (t.always) return true;
+    if (t.cpu && t.cpu !== cpu) return false;
+    if (t.gpu && t.gpu !== gpuSeries) return false;
+    return true;
+  });
+}
+
+function impactLabel(level) {
+  const map = { high: 'Alto', medium: 'Médio', low: 'Baixo' };
+  return map[level] || level;
+}
+
+function generate() {
+  const gpuSeries = document.getElementById('gpu_series').value;
+  const gpuModel  = document.getElementById('gpu_model').value.trim() || gpuSeries.toUpperCase();
+  const res       = document.getElementById('res').value;
+  const hz        = document.getElementById('hz').value;
+  const cpu       = document.getElementById('cpu').value;
+
+  document.getElementById('res-title').textContent = `${gpuModel} / ${res} / ${hz}Hz`;
+
+  // NVCP table
+  const tbody = document.getElementById('nvcp-body');
+  tbody.innerHTML = '';
+  NVCP_BASE.forEach(row => {
+    const tr = document.createElement('tr');
+    let valHtml = '';
+    if (row.type === 'key')     valHtml = `<span class="val-key">${row.val}</span>`;
+    else if (row.type === 'off') valHtml = `<span class="val-off">${row.val}</span>`;
+    else if (row.type === 'warn') valHtml = `<span class="val-warn">${row.val}</span>`;
+    else if (row.type === 'incompat') valHtml = `<span class="val-incompat">Não compatível</span>`;
+    else valHtml = row.val;
+
+    const dotClass = row.impact === 'high' ? 'dot-high' : row.impact === 'medium' ? 'dot-medium' : 'dot-low';
+    tr.innerHTML = `
+      <td class="setting-name">${row.name}</td>
+      <td class="setting-value">${valHtml}</td>
+      <td><div class="impact-cell"><span class="impact-dot ${dotClass}"></span>${impactLabel(row.impact)}</div></td>
+      <td class="note-cell">${row.note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Launch options
+  document.getElementById('launch-box').textContent = getLaunchOptions(hz, gpuSeries);
+
+  // FPS
+  const fpsgrid = document.getElementById('fps-grid');
+  fpsgrid.innerHTML = '';
+  getFpsEstimate(res, gpuSeries).forEach(item => {
+    fpsgrid.innerHTML += `
+      <div class="fps-card">
+        <div class="fps-label">${item.label}</div>
+        <div class="fps-value">${item.fps}</div>
+        <div class="fps-map">${item.sub}</div>
+      </div>
+    `;
+  });
+
+  // Tips
+  const tipsBox = document.getElementById('tips-box');
+  tipsBox.innerHTML = '';
+  getTips(cpu, gpuSeries, res).forEach(t => {
+    tipsBox.innerHTML += `<div class="tip">${t.text}</div>`;
+  });
+
+  const results = document.getElementById('results');
+  results.classList.add('show');
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyAll() {
+  const rows = document.querySelectorAll('#nvcp-body tr');
+  let text = 'PAINEL DE CONTROLE NVIDIA — CS2\n\n';
+  rows.forEach(r => {
+    const cells = r.querySelectorAll('td');
+    text += `${cells[0].textContent.trim()} → ${cells[1].textContent.trim()}\n`;
+  });
+  text += '\nLAUNCH OPTIONS\n' + document.getElementById('launch-box').textContent + '\n';
+  text += '\nESTIMATIVA DE FPS\n';
+  document.querySelectorAll('.fps-card').forEach(c => {
+    text += `${c.querySelector('.fps-label').textContent}: ${c.querySelector('.fps-value').textContent}\n`;
+  });
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '[ copiado! ]';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '[ copiar tudo ]'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
