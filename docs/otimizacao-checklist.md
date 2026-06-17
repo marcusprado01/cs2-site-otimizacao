@@ -36,12 +36,32 @@
 - [ ] Responsividade (mobile-first)
 - [ ] Favicon e manifest
 
-## Medições (antes / depois)
+## Medições (Lighthouse 12 — site publicado em GitHub Pages)
 
-| Métrica           | Antes | Depois |
-|-------------------|-------|--------|
-| Lighthouse Perf.  |       |        |
-| LCP               |       |        |
-| INP               |       |        |
-| CLS               |       |        |
-| Peso total (KB)   |       |        |
+Data: 2026-06-17 · URL: https://marcusprado01.github.io/cs2-site-otimizacao/
+
+### Scores
+
+| Categoria       | Mobile | Desktop |
+|-----------------|:------:|:-------:|
+| Performance     | **100**| **100** |
+| Accessibility   | 83     | 83      |
+| Best Practices  | **100**| **100** |
+| SEO             | **100**| **100** |
+
+### Core Web Vitals (lab)
+
+| Métrica      | Mobile | Desktop |
+|--------------|:------:|:-------:|
+| FCP          | 0.9 s  | 0.2 s   |
+| LCP          | 0.9 s  | 0.2 s   |
+| TBT          | 0 ms   | 0 ms    |
+| CLS          | 0      | 0       |
+| Speed Index  | 0.9 s  | 0.2 s   |
+
+### Pendências de Acessibilidade (score 83)
+
+- [ ] **color-contrast** — alguns textos (provável `--text3 #535c70`) não atingem contraste WCAG AA
+- [ ] **select-name** — `<select>` sem `<label>` associado via `for`/`id` (ou `aria-label`)
+
+> Ambas serão corrigidas na próxima iteração (rework do formulário para config completa de PC).

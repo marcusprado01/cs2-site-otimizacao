@@ -8,6 +8,7 @@ build/
 
 # Ferramentas de otimização / relatórios
 lighthouse-report.*
+lh-*.json
 *.log
 
 # Sistema
