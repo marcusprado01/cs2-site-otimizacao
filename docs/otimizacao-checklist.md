@@ -45,9 +45,11 @@ Data: 2026-06-17 · URL: https://marcusprado01.github.io/cs2-site-otimizacao/
 | Categoria       | Mobile | Desktop |
 |-----------------|:------:|:-------:|
 | Performance     | **100**| **100** |
-| Accessibility   | 83     | 83      |
+| Accessibility   | **100**| **100** |
 | Best Practices  | **100**| **100** |
 | SEO             | **100**| **100** |
+
+> Acessibilidade: 83 → **100** após corrigir contraste (`--text3`) e `<label for>`.
 
 ### Core Web Vitals (lab)
 
@@ -64,4 +66,4 @@ Data: 2026-06-17 · URL: https://marcusprado01.github.io/cs2-site-otimizacao/
 - [x] **color-contrast** — `--text3` ajustado de `#535c70` para `#808a9e` (passa WCAG AA)
 - [x] **select-name** — todos os `<select>` agora têm `<label for>` associado
 
-> Corrigido no rework "config completa de PC". Re-medir o score após o deploy.
+> Corrigido no rework "config completa de PC". Re-medido pós-deploy: **Accessibility 100**.
