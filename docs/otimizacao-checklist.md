@@ -59,9 +59,9 @@ Data: 2026-06-17 · URL: https://marcusprado01.github.io/cs2-site-otimizacao/
 | CLS          | 0      | 0       |
 | Speed Index  | 0.9 s  | 0.2 s   |
 
-### Pendências de Acessibilidade (score 83)
+### Pendências de Acessibilidade (score 83) — CORRIGIDAS
 
-- [ ] **color-contrast** — alguns textos (provável `--text3 #535c70`) não atingem contraste WCAG AA
-- [ ] **select-name** — `<select>` sem `<label>` associado via `for`/`id` (ou `aria-label`)
+- [x] **color-contrast** — `--text3` ajustado de `#535c70` para `#808a9e` (passa WCAG AA)
+- [x] **select-name** — todos os `<select>` agora têm `<label for>` associado
 
-> Ambas serão corrigidas na próxima iteração (rework do formulário para config completa de PC).
+> Corrigido no rework "config completa de PC". Re-medir o score após o deploy.

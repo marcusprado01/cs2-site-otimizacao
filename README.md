@@ -12,7 +12,13 @@ Otimizar um site já em produção, com foco em:
 - **Acessibilidade** — contraste, ARIA, navegação por teclado
 - **Boas práticas** — HTTPS, lazy loading, cache, minificação
 
-A aplicação é o **Configurador NVCP CS2**: uma página única e autocontida (HTML + CSS + JS inline, sem dependências externas além das fontes via CDN) que gera as configurações ideais do Painel de Controle Nvidia, launch options da Steam e estimativa de FPS conforme o hardware informado. Todo o processamento é local, sem envio de dados.
+A aplicação é o **Configurador CS2**: uma página única e autocontida (HTML + CSS + JS inline, sem dependências externas além das fontes via CDN). A partir da **configuração completa do PC** (CPU, RAM, GPU, monitor e tipo de armazenamento) ela:
+
+- **Diagnostica o gargalo** (CPU-bound, GPU-bound ou equilibrado) usando o modelo `FPS ≈ min(teto CPU+RAM, teto GPU@resolução)`, já que o CS2 é um jogo CPU-bound;
+- Recomenda as configurações do **Painel de Controle Nvidia**, **launch options** da Steam, **configurações in-game do CS2** (vídeo + console/autoexec) e **ajustes do Windows**;
+- Estima o **FPS real** por tipo de mapa e lista as **ações de maior impacto** para aquele hardware específico.
+
+Todo o processamento é local, sem envio de dados.
 
 ## Estrutura
 
