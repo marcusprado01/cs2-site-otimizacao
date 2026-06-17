@@ -1,0 +1,23 @@
+# Dependências
+node_modules/
+
+# Build / saída
+dist/
+build/
+.cache/
+
+# Ferramentas de otimização / relatórios
+lighthouse-report.*
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Variáveis de ambiente
+.env
+.env.local
