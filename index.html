@@ -41,7 +41,9 @@
     --red-dim: #ff4c4c18;
     --text: #e8eaf0;
     --text2: #8892a4;
-    --text3: #535c70;
+    --text3: #808a9e;
+    --blue: #4aa3ff;
+    --blue-dim: #4aa3ff18;
     --mono: 'JetBrains Mono', monospace;
     --sans: 'Inter', sans-serif;
   }
@@ -315,7 +317,8 @@
     font-size: 13px;
     color: var(--green);
     letter-spacing: .01em;
-    word-break: break-all;
+    word-break: break-word;
+    white-space: pre-wrap;
     line-height: 1.8;
   }
 
@@ -366,6 +369,43 @@
   }
 
   .tip strong { color: var(--text); font-weight: 500; }
+
+  /* DIAGNÓSTICO DE GARGALO */
+  .diagnostic {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 2.5rem;
+  }
+  .diag-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .diag-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-weight: 500;
+  }
+  .diag-badge.cpu      { color: var(--amber); background: var(--amber-dim); border: 1px solid #f5a62355; }
+  .diag-badge.gpu      { color: var(--blue);  background: var(--blue-dim);  border: 1px solid #4aa3ff55; }
+  .diag-badge.balanced { color: var(--green); background: var(--green-dim); border: 1px solid #00e57a55; }
+  .diag-title { font-size: 15px; font-weight: 600; color: #fff; }
+  .diag-text { font-size: 13px; color: var(--text2); margin-bottom: 14px; line-height: 1.6; }
+
+  .diag-meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .meter { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .meter .m-label { font-size: 10px; font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+  .meter .m-value { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); }
+  .meter.limit-cpu .m-value { color: var(--amber); }
+  .meter.limit-gpu .m-value { color: var(--blue); }
+  .meter.real .m-value { color: var(--green); }
+
+  .diag-actions { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .diag-actions li { font-size: 13px; color: var(--text2); display: flex; gap: 8px; align-items: flex-start; line-height: 1.55; }
+  .diag-actions li::before { content: '▸'; color: var(--green); flex-shrink: 0; }
+  .diag-actions strong { color: var(--text); font-weight: 500; }
 
   /* FOOTER */
   footer {
@@ -447,6 +487,7 @@
 
     .results-header { gap: .75rem; }
     .launch-box { font-size: 12px; padding: 12px 14px; }
+    .diag-meters { grid-template-columns: 1fr; }
   }
 
   @media (max-width: 360px) {
@@ -459,16 +500,78 @@
 <header>
   <div class="eyebrow">Nvidia Control Panel</div>
   <h1>Configurador <span>CS2</span></h1>
-  <p class="sub">Preencha sua configuração de hardware e receba todas as opções do painel de controle Nvidia, launch options e estimativa de FPS.</p>
+  <p class="sub">Informe a configuração completa do PC e receba o diagnóstico de gargalo (CPU ou GPU), as opções do painel Nvidia, launch options e a estimativa de FPS sob medida para o seu hardware.</p>
 </header>
 
 <main>
   <!-- FORM -->
   <div class="form-section">
+    <div class="section-label">Processador (CPU)</div>
+    <div class="fields">
+      <div class="field">
+        <label for="cpu_brand">Marca</label>
+        <select id="cpu_brand">
+          <option value="amd">AMD Ryzen</option>
+          <option value="intel">Intel Core</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cpu_tier">Faixa de desempenho</label>
+        <select id="cpu_tier">
+          <option value="entry">Entrada — Ryzen 3 / i3 antigos, FX, quad-core</option>
+          <option value="budget">Custo-benefício — Ryzen 5 1600/2600, i5-8400/9400F</option>
+          <option value="mainstream" selected>Mainstream — Ryzen 5 3600/5500, i5-10400/12400</option>
+          <option value="high">Alto — Ryzen 5 5600X/7600, i5-12600K/13400F, i7-10700</option>
+          <option value="enthusiast">Entusiasta — Ryzen 7 5800X/7700, i7-12700K/13700K, i9</option>
+          <option value="x3d">Topo / X3D — Ryzen 7 5800X3D/7800X3D/9800X3D, i9-14900K</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cpu_model">Modelo exato (opcional)</label>
+        <input type="text" id="cpu_model" placeholder="ex: Ryzen 5 5600">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="section-label">Memória (RAM)</div>
+    <div class="fields">
+      <div class="field">
+        <label for="ram_cap">Capacidade</label>
+        <select id="ram_cap">
+          <option value="8">8 GB</option>
+          <option value="16" selected>16 GB</option>
+          <option value="32">32 GB</option>
+          <option value="64">64 GB</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ram_speed">Velocidade</label>
+        <select id="ram_speed">
+          <option value="slow">DDR4 2133–2400</option>
+          <option value="ddr4_mid">DDR4 2666–3000</option>
+          <option value="ddr4_3200" selected>DDR4 3200</option>
+          <option value="ddr4_3600">DDR4 3600+</option>
+          <option value="ddr5_mid">DDR5 4800–5200</option>
+          <option value="ddr5_6000">DDR5 6000</option>
+          <option value="ddr5_fast">DDR5 6400+</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ram_chan">Canais</label>
+        <select id="ram_chan">
+          <option value="dual" selected>Dual channel (2+ pentes)</option>
+          <option value="single">Single channel (1 pente)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
     <div class="section-label">GPU</div>
     <div class="fields">
       <div class="field">
-        <label>Série</label>
+        <label for="gpu_series">Série</label>
         <select id="gpu_series">
           <option value="rtx5">RTX 5000 (Blackwell)</option>
           <option value="rtx4">RTX 4000 (Ada)</option>
@@ -478,17 +581,17 @@
         </select>
       </div>
       <div class="field">
-        <label>Modelo (ex: RTX 2060)</label>
+        <label for="gpu_model">Modelo exato (opcional)</label>
         <input type="text" id="gpu_model" placeholder="ex: RTX 2060">
       </div>
     </div>
   </div>
 
   <div class="form-section">
-    <div class="section-label">Monitor & Alvo</div>
+    <div class="section-label">Monitor & Armazenamento</div>
     <div class="fields">
       <div class="field">
-        <label>Resolução</label>
+        <label for="res">Resolução</label>
         <select id="res">
           <option value="1280x960">1280x960 (4:3)</option>
           <option value="1280x1024">1280x1024 (5:4)</option>
@@ -498,7 +601,7 @@
         </select>
       </div>
       <div class="field">
-        <label>Taxa de refresh</label>
+        <label for="hz">Taxa de refresh</label>
         <select id="hz">
           <option value="60">60 Hz</option>
           <option value="144" selected>144 Hz</option>
@@ -507,10 +610,11 @@
         </select>
       </div>
       <div class="field">
-        <label>CPU</label>
-        <select id="cpu">
-          <option value="amd">AMD Ryzen</option>
-          <option value="intel">Intel Core</option>
+        <label for="ssd">Armazenamento do CS2</label>
+        <select id="ssd">
+          <option value="nvme" selected>SSD NVMe</option>
+          <option value="sata">SSD SATA</option>
+          <option value="hdd">HD mecânico (HDD)</option>
         </select>
       </div>
     </div>
@@ -528,6 +632,9 @@
       <div class="results-title">Configuração para <strong id="res-title">—</strong></div>
       <button class="btn-copy" id="copy-btn" onclick="copyAll()">[ copiar tudo ]</button>
     </div>
+
+    <!-- DIAGNÓSTICO -->
+    <div class="diagnostic" id="diagnostic"></div>
 
     <!-- NVCP TABLE -->
     <div class="section-block">
@@ -549,6 +656,31 @@
     <div class="section-block">
       <div class="section-block-title">Launch options — Steam</div>
       <div class="launch-box" id="launch-box"></div>
+    </div>
+
+    <!-- CS2 IN-GAME -->
+    <div class="section-block">
+      <div class="section-block-title">Configurações in-game do CS2</div>
+      <table class="config-table" id="cs2-table">
+        <thead>
+          <tr>
+            <th>Opção</th>
+            <th>Recomendado</th>
+            <th>Impacto</th>
+            <th>Nota</th>
+          </tr>
+        </thead>
+        <tbody id="cs2-body"></tbody>
+      </table>
+      <div class="section-label" style="border:none; margin:1.2rem 0 .6rem;">Console / autoexec.cfg</div>
+      <div class="launch-box" id="cs2-console"></div>
+      <p class="sub" style="margin-top:.7rem; font-size:12px;">Salve em <code>...\Steam\steamapps\common\Counter-Strike Global Offensive\game\csgo\cfg\autoexec.cfg</code> e adicione <code>+exec autoexec.cfg</code> às launch options.</p>
+    </div>
+
+    <!-- WINDOWS -->
+    <div class="section-block">
+      <div class="section-block-title">Configurações do Windows</div>
+      <div id="windows-box"></div>
     </div>
 
     <!-- FPS -->
@@ -600,85 +732,71 @@ const NVCP_BASE = [
   { name: "Taxa máxima de quadros de aplicativo",   val: "Desligado",                      type: "off",    impact: "medium", note: "" },
 ];
 
-function getLaunchOptions(hz, gpuSeries) {
-  let base = `-novid -nojoy -freq ${hz} -refresh ${hz} +fps_max 0 -console`;
-  if (gpuSeries === 'rtx3' || gpuSeries === 'rtx2' || gpuSeries === 'gtx16' || gpuSeries === 'gtx10') {
-    base += ' -allow_third_party_software';
-  }
-  return base;
-}
+// ===== Modelo de performance do CS2 (jogo CPU-bound) =====
+// FPS real ≈ min(teto da CPU+RAM, teto da GPU na resolução).
+const CPU_CEIL = { entry: 150, budget: 250, mainstream: 380, high: 470, enthusiast: 570, x3d: 700 };
 
-function getFpsEstimate(res, gpuSeries) {
-  const maps = {
-    high:   { label: "Mapas abertos",   sub: "Dust2, Mirage" },
-    medium: { label: "Mapas densos",    sub: "Inferno, Ancient" },
-    low:    { label: "Smokes / fight",  sub: "pico de ação" },
-    avg:    { label: "Média geral",     sub: "competitivo" },
-  };
+const RAM_CAP_MOD   = { "8": 0.82, "16": 1.0, "32": 1.03, "64": 1.03 };
+const RAM_SPEED_MOD = { slow: 0.90, ddr4_mid: 0.96, ddr4_3200: 1.0, ddr4_3600: 1.05, ddr5_mid: 1.06, ddr5_6000: 1.12, ddr5_fast: 1.15 };
+const RAM_CHAN_MOD  = { dual: 1.0, single: 0.80 };
 
-  const table = {
-    // [high, medium, low, avg]
-    rtx5:  { "1280x960": ["600+","500+","400+","~500+"], "1920x1080": ["500+","400+","300+","~420"], "2560x1440": ["400+","300+","220+","~340"], "3840x2160": ["200+","160+","120+","~180"] },
-    rtx4:  { "1280x960": ["500+","380+","300+","~400"],  "1920x1080": ["400+","300+","220+","~330"], "2560x1440": ["300+","220+","160+","~250"], "3840x2160": ["150+","110+","80+", "~130"] },
-    rtx3:  { "1280x960": ["300–350","200–260","150–200","~220–280"], "1920x1080": ["220–280","160–200","120–160","~180–220"], "2560x1440": ["140–180","110–140","80–110","~120–160"], "3840x2160": ["70–90","55–70","40–55","~60–80"] },
-    gtx16: { "1280x960": ["200–250","150–200","120–160","~160–200"], "1920x1080": ["150–190","110–150","80–110","~120–160"], "2560x1440": ["90–120","70–95","55–75","~80–110"],  "3840x2160": ["40–55","30–45","25–35","~35–50"] },
-    gtx10: { "1280x960": ["160–200","120–160","90–130","~130–170"], "1920x1080": ["120–150","90–120","65–90","~100–130"],   "2560x1440": ["70–90","55–75","40–60","~60–85"],    "3840x2160": ["30–40","22–32","16–25","~25–35"] },
-  };
+// Teto de FPS que a GPU sustenta com CPU "infinita", por série e resolução.
+const GPU_CEIL = {
+  rtx5:  { "1280x960": 900, "1280x1024": 880, "1920x1080": 800, "2560x1440": 650, "3840x2160": 350 },
+  rtx4:  { "1280x960": 760, "1280x1024": 740, "1920x1080": 660, "2560x1440": 500, "3840x2160": 260 },
+  rtx3:  { "1280x960": 560, "1280x1024": 540, "1920x1080": 480, "2560x1440": 340, "3840x2160": 165 },
+  gtx16: { "1280x960": 360, "1280x1024": 350, "1920x1080": 290, "2560x1440": 185, "3840x2160": 82 },
+  gtx10: { "1280x960": 300, "1280x1024": 290, "1920x1080": 240, "2560x1440": 150, "3840x2160": 66 },
+};
 
-  const row = table[gpuSeries]?.[res] || table['rtx3']['1920x1080'];
-  return [
-    { ...maps.high,   fps: row[0] },
-    { ...maps.medium, fps: row[1] },
-    { ...maps.low,    fps: row[2] },
-    { ...maps.avg,    fps: row[3] },
-  ];
-}
+const CPU_TIER_LABEL = { entry: 'CPU de entrada', budget: 'CPU custo-benefício', mainstream: 'CPU mainstream', high: 'CPU de alto desempenho', enthusiast: 'CPU entusiasta', x3d: 'CPU topo / X3D' };
+const GPU_SERIES_LABEL = { rtx5: 'RTX 5000', rtx4: 'RTX 4000', rtx3: 'RTX 3000/2000', gtx16: 'GTX 1600', gtx10: 'GTX 1000' };
 
-function getTips(cpu, gpuSeries, res) {
-  const tips = [
-    { always: true,  text: "<strong>Windows — Modo de energia:</strong> Painel de controle → Opções de energia → Alto desempenho. Via cmd admin: <code>powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</code>" },
-    { always: true,  text: "<strong>XMP / EXPO na BIOS:</strong> Ativa o perfil XMP (Intel) ou EXPO (AMD) para rodar a RAM na frequência nominal — diferença real de FPS, especialmente em CPUs AMD." },
-    { always: true,  text: "<strong>Game DVR desativado:</strong> Win+G → Configurações → desativa tudo, ou regedit: <code>HKCU\\System\\GameConfigStore → GameDVR_Enabled = 0</code>" },
-    { always: true,  text: "<strong>CS2 autoexec.cfg:</strong> Adiciona <code>fps_max 0 | r_dynamic 0 | r_drawtracers_firstperson 0 | mat_queue_mode 2</code>" },
-    { cpu: 'amd',    text: "<strong>AMD específico:</strong> Ativa XMP/EXPO na BIOS. Desativa Cool'n'Quiet e Global C-state Control para reduzir latência de resposta dos cores." },
-    { cpu: 'intel',  text: "<strong>Intel específico:</strong> Desativa C-States e Speed Shift na BIOS se buscar latência mínima. Ativa XMP para DDR4/DDR5." },
-    { gpu: 'rtx3',   text: "<strong>Resizable BAR:</strong> Se a sua placa-mãe suportar, ativa Above 4G Decoding + Resizable BAR na BIOS — ganho de 5–15% no CS2." },
-    { gpu: 'rtx4',   text: "<strong>RTX 4000 — DLSS Frame Gen:</strong> Não use no CS2 competitivo. Adiciona latência de input que prejudica aim." },
-    { gpu: 'rtx5',   text: "<strong>RTX 5000 — DLSS 4 Multi Frame Gen:</strong> Não use no CS2 competitivo. Latência artificial afeta responsividade." },
-    { always: true,  text: "<strong>Driver Nvidia:</strong> Drivers 537.34, 551.23 ou 552.22 têm histórico mais estável no CS2. Pós-600 podem ter overhead maior. Usa DDU para reinstalar limpo se trocar versão." },
-  ];
+// Configurações de vídeo in-game do CS2 (perfil competitivo / performance)
+const CS2_VIDEO = [
+  { name: "Modo de exibição",                       val: "Tela cheia (exclusiva)", type: "key",  impact: "high",   note: "Menor latência que janela/borderless" },
+  { name: "Modo de baixa latência (NVIDIA Reflex)", val: "Ativado + Boost",        type: "key",  impact: "high",   note: "Reduz input lag — essencial" },
+  { name: "Aumentar contraste do jogador",          val: "Ativado",                type: "warn", impact: "medium", note: "Melhora a leitura dos inimigos" },
+  { name: "Sincronização vertical",                 val: "Desligado",              type: "off",  impact: "high",   note: "VSync adiciona latência" },
+  { name: "Anti-serrilhamento (MSAA)",              val: "CMAA2",                  type: "warn", impact: "medium", note: "Barato; 2x MSAA se sobrar GPU" },
+  { name: "Qualidade de sombra global",             val: "Baixo",                  type: "key",  impact: "high",   note: "Maior ganho isolado de FPS" },
+  { name: "Sombras dinâmicas",                      val: "Apenas sol",             type: "warn", impact: "medium", note: "" },
+  { name: "Detalhe de modelo / textura",            val: "Baixo",                  type: "key",  impact: "medium", note: "" },
+  { name: "Filtragem de textura",                   val: "Anisotrópica 4x",        type: "warn", impact: "low",    note: "Barato visualmente" },
+  { name: "Detalhe de shader",                      val: "Baixo",                  type: "key",  impact: "medium", note: "" },
+  { name: "Detalhe de efeitos de partícula",        val: "Baixo",                  type: "key",  impact: "medium", note: "" },
+  { name: "Oclusão de ambiente (SSAO)",             val: "Desligado",              type: "off",  impact: "medium", note: "" },
+  { name: "Alto alcance dinâmico (HDR)",            val: "Qualidade",              type: "warn", impact: "low",    note: "" },
+  { name: "FidelityFX Super Resolution",            val: "Desativado (nativo)",    type: "off",  impact: "medium", note: "Upscaling prejudica a nitidez competitiva" },
+];
 
-  return tips.filter(t => {
-    if (t.always) return true;
-    if (t.cpu && t.cpu !== cpu) return false;
-    if (t.gpu && t.gpu !== gpuSeries) return false;
-    return true;
-  });
-}
+// Comandos de console / autoexec.cfg (válidos no CS2 / Source 2)
+const CS2_CONSOLE = `fps_max 0
+fps_max_ui 120
+cl_disablehtmlmotd 1
+engine_no_focus_sleep 0`;
 
-function impactLabel(level) {
-  const map = { high: 'Alto', medium: 'Médio', low: 'Baixo' };
-  return map[level] || level;
-}
+// Ajustes recomendados no Windows
+const WINDOWS_SETTINGS = [
+  "<strong>Plano de energia → Alto desempenho:</strong> Painel de Controle → Opções de Energia. Para liberar o plano <em>Ultimate Performance</em>, rode em cmd admin: <code>powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61</code>",
+  "<strong>Modo de Jogo:</strong> Configurações → Jogos → Modo de Jogo → Ativado.",
+  "<strong>Agendamento de GPU acelerado por hardware (HAGS):</strong> Configurações → Sistema → Vídeo → Gráficos → Configurações padrão → Ativado. Reinicie depois.",
+  "<strong>Xbox Game Bar / Game DVR:</strong> desative tudo (Configurações → Jogos). Via regedit: <code>HKCU\\System\\GameConfigStore → GameDVR_Enabled = 0</code>.",
+  "<strong>Aceleração do mouse:</strong> Configurações → Mouse → desmarque <em>Aprimorar a precisão do ponteiro</em>. Essencial para consistência de aim.",
+  "<strong>Jogos em janela (Win11):</strong> ative <em>Variable Refresh Rate</em> e <em>Optimizations for windowed games</em> se jogar em modo janela/borderless.",
+  "<strong>Efeitos visuais (opcional):</strong> Sistema → Sobre → Configurações avançadas → Desempenho → <em>Ajustar para melhor desempenho</em>.",
+  "<strong>Windows e driver em dia:</strong> updates pendentes e drivers antigos causam stutter e perda de FPS.",
+];
 
-function generate() {
-  const gpuSeries = document.getElementById('gpu_series').value;
-  const gpuModel  = document.getElementById('gpu_model').value.trim() || gpuSeries.toUpperCase();
-  const res       = document.getElementById('res').value;
-  const hz        = document.getElementById('hz').value;
-  const cpu       = document.getElementById('cpu').value;
-
-  document.getElementById('res-title').textContent = `${gpuModel} / ${res} / ${hz}Hz`;
-
-  // NVCP table
-  document.getElementById('nvcp-body').innerHTML = NVCP_BASE.map(row => {
+// Monta as linhas <tr> de uma tabela de configuração (reutilizado por NVCP e CS2)
+function renderConfigRows(rows) {
+  return rows.map(row => {
     let valHtml;
     if (row.type === 'key')           valHtml = `<span class="val-key">${row.val}</span>`;
     else if (row.type === 'off')      valHtml = `<span class="val-off">${row.val}</span>`;
     else if (row.type === 'warn')     valHtml = `<span class="val-warn">${row.val}</span>`;
     else if (row.type === 'incompat') valHtml = `<span class="val-incompat">Não compatível</span>`;
     else                              valHtml = row.val;
-
     const dotClass = row.impact === 'high' ? 'dot-high' : row.impact === 'medium' ? 'dot-medium' : 'dot-low';
     return `
       <tr>
@@ -688,12 +806,159 @@ function generate() {
         <td class="note-cell" data-label="Nota">${row.note}</td>
       </tr>`;
   }).join('');
+}
+
+function computePerf(cfg) {
+  const cpuBase = CPU_CEIL[cfg.cpuTier] || CPU_CEIL.mainstream;
+  const ramMod  = (RAM_CAP_MOD[cfg.ramCap] || 1) * (RAM_SPEED_MOD[cfg.ramSpeed] || 1) * (RAM_CHAN_MOD[cfg.ramChan] || 1);
+  const cpuEff  = Math.round(cpuBase * ramMod);
+  const gpuCap  = (GPU_CEIL[cfg.gpuSeries] && GPU_CEIL[cfg.gpuSeries][cfg.res]) || GPU_CEIL.rtx3["1920x1080"];
+  const realAvg = Math.min(cpuEff, gpuCap);
+  const ratio   = cpuEff / gpuCap;
+  let bottleneck = 'balanced';
+  if (ratio < 0.9) bottleneck = 'cpu';
+  else if (ratio > 1.15) bottleneck = 'gpu';
+  return { cpuEff, gpuCap, realAvg, bottleneck };
+}
+
+function getPriorities(cfg, perf) {
+  const p = [];
+  if (cfg.ramChan === 'single') p.push("<strong>Ative dual channel:</strong> rodar com 1 pente custa ~15–20% de FPS no CS2. Adicione um segundo módulo idêntico.");
+  if (cfg.ramCap === '8') p.push("<strong>Suba para 16 GB+:</strong> 8 GB causa stutter e paginação no CS2. 16 GB é o mínimo competitivo.");
+  if (cfg.ramSpeed === 'slow' || cfg.ramSpeed === 'ddr4_mid') p.push("<strong>Ative XMP/EXPO na BIOS:</strong> sua RAM está abaixo do ideal. Rodar na frequência nominal (3200+ DDR4 / 6000 DDR5) dá ganho direto de FPS.");
+
+  if (perf.bottleneck === 'cpu') {
+    p.push("<strong>Foque em CPU/RAM:</strong> a GPU já entrega o necessário. XMP/EXPO, baixa latência (C-states / Cool'n'Quiet off) e, num upgrade, um CPU com mais cache (X3D) elevam o teto.");
+    p.push("<strong>Não baixe a resolução para ganhar FPS:</strong> em cenário CPU-bound o ganho é marginal — use a resolução que preferir visualmente.");
+  } else if (perf.bottleneck === 'gpu') {
+    p.push("<strong>Baixe resolução e settings gráficos:</strong> a GPU é o limite. Resolução menor, sombras/efeitos baixos e MSAA off aumentam o FPS diretamente.");
+    if (cfg.gpuSeries === 'rtx3' || cfg.gpuSeries === 'gtx16' || cfg.gpuSeries === 'gtx10')
+      p.push("<strong>Ative Resizable BAR:</strong> Above 4G Decoding + ReBAR na BIOS rende 5–15% no CS2 em placas compatíveis.");
+  } else {
+    p.push("<strong>Latência baixa Ultra</strong> no painel Nvidia + <strong>Prefira desempenho máximo</strong> mantêm o sistema responsivo sem perder FPS.");
+  }
+
+  if (cfg.ssd === 'hdd') p.push("<strong>Migre o CS2 para um SSD:</strong> em HDD você terá loadings longos e stutter ao carregar mapas/texturas. Não muda o FPS médio, mas a fluidez sim.");
+
+  p.push("<strong>Windows em Alto desempenho</strong> + Game DVR desligado + <code>fps_max 0</code> no autoexec garantem o teto sem throttle.");
+  return p.slice(0, 5);
+}
+
+function renderDiagnostic(cfg, perf) {
+  const map = {
+    cpu: { cls: 'cpu', badge: 'CPU-bound', title: 'Seu PC é limitado pela CPU',
+      text: "A GPU tem folga nessa resolução — o teto de FPS vem do processador + memória. Baixar resolução ou settings gráficos <strong>não</strong> aumenta o FPS médio; o ganho está em CPU/RAM e latência." },
+    gpu: { cls: 'gpu', badge: 'GPU-bound', title: 'Seu PC é limitado pela GPU',
+      text: "O processador tem folga — a GPU é o gargalo nessa resolução. Baixar a resolução e os settings gráficos do CS2 aumenta o FPS diretamente." },
+    balanced: { cls: 'balanced', badge: 'Equilibrado', title: 'CPU e GPU estão equilibrados',
+      text: "Bom balanço entre processador e GPU nessa resolução. Ganhos extras vêm de RAM mais rápida (XMP/EXPO), baixa latência e housekeeping do Windows." },
+  }[perf.bottleneck];
+
+  const meters = `
+    <div class="diag-meters">
+      <div class="meter ${perf.bottleneck === 'cpu' ? 'limit-cpu' : ''}"><div class="m-label">Teto CPU + RAM</div><div class="m-value">~${perf.cpuEff} fps</div></div>
+      <div class="meter ${perf.bottleneck === 'gpu' ? 'limit-gpu' : ''}"><div class="m-label">Teto GPU @ ${cfg.res}</div><div class="m-value">~${perf.gpuCap} fps</div></div>
+      <div class="meter real"><div class="m-label">FPS real estimado</div><div class="m-value">~${perf.realAvg} fps</div></div>
+    </div>`;
+
+  const actions = getPriorities(cfg, perf).map(a => `<li>${a}</li>`).join('');
+
+  return `
+    <div class="diag-head">
+      <span class="diag-badge ${map.cls}">${map.badge}</span>
+      <span class="diag-title">${map.title}</span>
+    </div>
+    <p class="diag-text">${map.text}</p>
+    ${meters}
+    <ul class="diag-actions">${actions}</ul>`;
+}
+
+function getLaunchOptions(hz, gpuSeries) {
+  let base = `-novid -nojoy -freq ${hz} -refresh ${hz} +fps_max 0 -console`;
+  if (gpuSeries === 'rtx3' || gpuSeries === 'rtx2' || gpuSeries === 'gtx16' || gpuSeries === 'gtx10') {
+    base += ' -allow_third_party_software';
+  }
+  return base;
+}
+
+function getFpsEstimate(realAvg) {
+  const r10 = v => Math.round(v / 10) * 10;
+  return [
+    { label: "Mapas abertos",   sub: "Dust2, Mirage",   fps: "~" + r10(realAvg * 1.12) },
+    { label: "Mapas densos",    sub: "Inferno, Ancient", fps: "~" + r10(realAvg * 0.92) },
+    { label: "Smokes / fight",  sub: "pico de ação",     fps: "~" + r10(realAvg * 0.72) },
+    { label: "Média geral",     sub: "competitivo",      fps: "~" + r10(realAvg) },
+  ];
+}
+
+function getTips(cfg) {
+  const tips = [
+    { show: true, text: "<strong>XMP / EXPO na BIOS:</strong> ative o perfil XMP (Intel) ou EXPO (AMD) para a RAM rodar na frequência nominal — ganho real de FPS, principalmente em CPUs AMD." },
+    { show: cfg.cpuBrand === 'amd',   text: "<strong>AMD específico:</strong> ative EXPO na BIOS; desative Cool'n'Quiet e Global C-state Control para reduzir a latência de resposta dos cores." },
+    { show: cfg.cpuBrand === 'intel', text: "<strong>Intel específico:</strong> desative C-States e Speed Shift na BIOS se buscar latência mínima; ative XMP para DDR4/DDR5." },
+    { show: cfg.gpuSeries === 'rtx3' || cfg.gpuSeries === 'gtx16' || cfg.gpuSeries === 'gtx10', text: "<strong>Resizable BAR:</strong> se a placa-mãe suportar, ative Above 4G Decoding + Resizable BAR na BIOS — ganho de 5–15% no CS2." },
+    { show: cfg.gpuSeries === 'rtx4', text: "<strong>RTX 4000 — DLSS Frame Gen:</strong> não use no CS2 competitivo. Adiciona latência de input que prejudica o aim." },
+    { show: cfg.gpuSeries === 'rtx5', text: "<strong>RTX 5000 — DLSS 4 Multi Frame Gen:</strong> não use no CS2 competitivo. Latência artificial afeta a responsividade." },
+    { show: cfg.ramCap === '8',       text: "<strong>RAM 8 GB:</strong> insuficiente para o CS2 atual — atualize para 16 GB+ (ideal 32 GB) para eliminar stutter." },
+    { show: cfg.ramChan === 'single', text: "<strong>Single channel:</strong> adicione um segundo pente idêntico para ativar dual channel — ganho expressivo de FPS." },
+    { show: cfg.ssd === 'nvme', text: "<strong>SSD NVMe:</strong> ✅ ideal — loadings rápidos e sem stutter de streaming. Nenhuma ação necessária." },
+    { show: cfg.ssd === 'sata', text: "<strong>SSD SATA:</strong> loadings ~2–3x mais lentos que NVMe, porém sem impacto no FPS. Upgrade é opcional." },
+    { show: cfg.ssd === 'hdd',  text: "<strong>HD mecânico:</strong> migre o CS2 para um SSD — loadings longos e stutter ao carregar assets. FPS médio não muda, fluidez sim." },
+    { show: true, text: "<strong>Driver Nvidia:</strong> mantenha-o atualizado; em caso de instabilidade, use o DDU para reinstalar limpo. Evite trocar de versão sem necessidade." },
+  ];
+  return tips.filter(t => t.show);
+}
+
+function impactLabel(level) {
+  const map = { high: 'Alto', medium: 'Médio', low: 'Baixo' };
+  return map[level] || level;
+}
+
+function val(id, isText) {
+  const el = document.getElementById(id);
+  return isText ? el.value.trim() : el.value;
+}
+
+function generate() {
+  const cfg = {
+    cpuBrand:  val('cpu_brand'),
+    cpuTier:   val('cpu_tier'),
+    cpuModel:  val('cpu_model', true),
+    ramCap:    val('ram_cap'),
+    ramSpeed:  val('ram_speed'),
+    ramChan:   val('ram_chan'),
+    gpuSeries: val('gpu_series'),
+    gpuModel:  val('gpu_model', true),
+    res:       val('res'),
+    hz:        val('hz'),
+    ssd:       val('ssd'),
+  };
+
+  const perf = computePerf(cfg);
+
+  const cpuLabel = cfg.cpuModel || CPU_TIER_LABEL[cfg.cpuTier] || 'CPU';
+  const gpuLabel = cfg.gpuModel || GPU_SERIES_LABEL[cfg.gpuSeries] || 'GPU';
+  document.getElementById('res-title').textContent = `${cpuLabel} + ${gpuLabel} / ${cfg.res} / ${cfg.hz}Hz`;
+
+  // Diagnóstico de gargalo
+  document.getElementById('diagnostic').innerHTML = renderDiagnostic(cfg, perf);
+
+  // Painel Nvidia
+  document.getElementById('nvcp-body').innerHTML = renderConfigRows(NVCP_BASE);
 
   // Launch options
-  document.getElementById('launch-box').textContent = getLaunchOptions(hz, gpuSeries);
+  document.getElementById('launch-box').textContent = getLaunchOptions(cfg.hz, cfg.gpuSeries);
 
-  // FPS
-  document.getElementById('fps-grid').innerHTML = getFpsEstimate(res, gpuSeries).map(item => `
+  // CS2 in-game + console
+  document.getElementById('cs2-body').innerHTML = renderConfigRows(CS2_VIDEO);
+  document.getElementById('cs2-console').textContent = CS2_CONSOLE;
+
+  // Windows
+  document.getElementById('windows-box').innerHTML =
+    WINDOWS_SETTINGS.map(t => `<div class="tip">${t}</div>`).join('');
+
+  // FPS (derivado do FPS real estimado)
+  document.getElementById('fps-grid').innerHTML = getFpsEstimate(perf.realAvg).map(item => `
       <div class="fps-card">
         <div class="fps-label">${item.label}</div>
         <div class="fps-value">${item.fps}</div>
@@ -701,9 +966,9 @@ function generate() {
       </div>
     `).join('');
 
-  // Tips
+  // Ajustes complementares (BIOS / driver / hardware)
   document.getElementById('tips-box').innerHTML =
-    getTips(cpu, gpuSeries, res).map(t => `<div class="tip">${t.text}</div>`).join('');
+    getTips(cfg).map(t => `<div class="tip">${t.text}</div>`).join('');
 
   const results = document.getElementById('results');
   results.classList.add('show');
@@ -711,19 +976,34 @@ function generate() {
 }
 
 function copyAll() {
-  const rows = document.querySelectorAll('#nvcp-body tr');
-  let text = 'PAINEL DE CONTROLE NVIDIA — CS2\n\n';
-  rows.forEach(r => {
-    const cells = r.querySelectorAll('td');
-    text += `${cells[0].textContent.trim()} → ${cells[1].textContent.trim()}\n`;
-  });
-  text += '\nLAUNCH OPTIONS\n' + document.getElementById('launch-box').textContent + '\n';
-  text += '\nESTIMATIVA DE FPS\n';
-  document.querySelectorAll('.fps-card').forEach(c => {
-    text += `${c.querySelector('.fps-label').textContent}: ${c.querySelector('.fps-value').textContent}\n`;
-  });
+  const lines = ['CONFIGURADOR CS2', '================', ''];
 
-  navigator.clipboard.writeText(text).then(() => {
+  const badge = document.querySelector('#diagnostic .diag-badge');
+  const dtitle = document.querySelector('#diagnostic .diag-title');
+  if (badge && dtitle) lines.push(`DIAGNÓSTICO: [${badge.textContent.trim()}] ${dtitle.textContent.trim()}`);
+  document.querySelectorAll('#diagnostic .meter').forEach(m =>
+    lines.push(`  ${m.querySelector('.m-label').textContent}: ${m.querySelector('.m-value').textContent}`));
+
+  const tableToLines = sel => {
+    const out = [];
+    document.querySelectorAll(sel + ' tr').forEach(r => {
+      const c = r.querySelectorAll('td');
+      if (c.length) out.push(`${c[0].textContent.trim()} → ${c[1].textContent.trim()}`);
+    });
+    return out;
+  };
+
+  lines.push('', 'PAINEL DE CONTROLE NVIDIA', ...tableToLines('#nvcp-body'));
+  lines.push('', 'LAUNCH OPTIONS (STEAM)', document.getElementById('launch-box').textContent);
+  lines.push('', 'CONFIGURAÇÕES IN-GAME CS2', ...tableToLines('#cs2-body'));
+  lines.push('', 'CONSOLE / AUTOEXEC', document.getElementById('cs2-console').textContent);
+  lines.push('', 'CONFIGURAÇÕES DO WINDOWS');
+  document.querySelectorAll('#windows-box .tip').forEach(t => lines.push('- ' + t.textContent.trim()));
+  lines.push('', 'ESTIMATIVA DE FPS');
+  document.querySelectorAll('.fps-card').forEach(c =>
+    lines.push(`${c.querySelector('.fps-label').textContent}: ${c.querySelector('.fps-value').textContent}`));
+
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
     const btn = document.getElementById('copy-btn');
     btn.textContent = '[ copiado! ]';
     btn.classList.add('copied');
