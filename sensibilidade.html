@@ -76,6 +76,17 @@
   .note strong { color: var(--text); }
   .note code { font-family: var(--mono); color: var(--green-text); }
 
+  /* SIMULADOR */
+  .sim-view { position: relative; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid var(--border2); background: #11141c; }
+  canvas#sim { width: 100%; height: auto; display: block; cursor: none; }
+  .sim-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; background: rgba(13,15,18,.8); cursor: pointer; text-align: center; padding: 1rem; }
+  .sim-overlay .big { color: #fff; font-weight: 600; font-size: 16px; }
+  .sim-overlay .small { color: var(--text2); font-size: 12px; max-width: 360px; }
+  .sim-modes { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .sim-modes button { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); font-family: var(--mono); font-size: 12px; padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+  .sim-modes button.active { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+  .sim-modes button.ghost { margin-left: auto; }
+
   footer { border-top: 1px solid var(--border); max-width: 860px; margin: 0 auto; padding: 1.5rem 2rem; font-size: 11px; color: var(--text3); font-family: var(--mono); }
 
   @media (max-width: 600px) {
@@ -155,6 +166,27 @@
     </div>
   </div>
 
+  <!-- SIMULADOR -->
+  <div class="card">
+    <div class="section-block-title">Simulador — como ficaria no jogo</div>
+    <div class="sim-view">
+      <canvas id="sim" width="780" height="380"></canvas>
+      <div class="sim-overlay" id="sim-overlay">
+        <div class="big">▶ Clique para ativar o mouse</div>
+        <div class="small">Move o mouse pra olhar em volta, exatamente como o CS2 giraria com o seu DPI e sensibilidade (da calculadora acima). Pressione <strong>ESC</strong> para sair.</div>
+      </div>
+    </div>
+    <div class="sim-modes">
+      <button id="mode-free" class="active">Olhar livre</button>
+      <button id="mode-flick">Teste de flick</button>
+      <button id="sim-reset" class="ghost">Zerar</button>
+    </div>
+    <div class="results" id="sim-hud" style="margin-top:12px"></div>
+    <div class="note">
+      ⚠️ <strong>Aproximação:</strong> o navegador recebe o movimento <em>após</em> a escala de ponteiro do Windows — fica fiel com o Windows em <code>6/11</code> e sem aceleração (a config recomendada). Serve pra <strong>sentir e comparar</strong> sensibilidades e treinar flick, não substitui o in-game ao pixel.
+    </div>
+  </div>
+
   <div class="note">
     <strong>Boas práticas:</strong> mantenha a velocidade do ponteiro do Windows em <code>6/11</code> (sem aceleração) e desative "Aprimorar a precisão do ponteiro" — assim o DPI do mouse vira a única variável e o cm/360 acima fica fiel. Fórmula usada: <code>cm/360 = (360 / (0.022 × sens)) / DPI × 2.54</code>.
   </div>
@@ -226,6 +258,139 @@ function renderConvert() {
 
 renderCalc();
 renderConvert();
+
+// ===== Simulador (Pointer Lock + primeira pessoa) =====
+(() => {
+  const cv = document.getElementById('sim');
+  const ctx = cv.getContext('2d');
+  const overlay = document.getElementById('sim-overlay');
+  const hud = document.getElementById('sim-hud');
+  const W = cv.width, H = cv.height, CX = W / 2, CY = H / 2;
+  const HFOV = 90;                 // FOV horizontal (graus)
+  const pxPerDeg = W / HFOV;
+  const TARGET_R = 17;             // raio visual/hit do alvo (px)
+
+  let yaw = 0, pitch = 0;
+  let locked = false, mode = 'free';
+  let counts = 0;                  // movimento acumulado (≈ counts)
+  let target = null, spawnTime = 0;
+  let hits = 0, shots = 0, sumMs = 0;
+
+  const normRel = a => { a = ((a % 360) + 360) % 360; return a > 180 ? a - 360 : a; };
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const getDpi = () => { const d = parseFloat(document.getElementById('dpi').value); return d > 0 ? d : 800; };
+  const getSens = () => { const s = parseFloat(document.getElementById('sens').value); return s > 0 ? s : 1; };
+
+  function spawnTarget() {
+    const offset = Math.random() * 100 - 50; // ±50° do yaw atual
+    target = {
+      yaw: ((yaw + offset) % 360 + 360) % 360,
+      pitch: clamp(pitch + (Math.random() * 24 - 12), -40, 40),
+    };
+    spawnTime = performance.now();
+  }
+
+  function shoot() {
+    shots++;
+    if (target) {
+      const rx = normRel(target.yaw - yaw) * pxPerDeg;
+      const ry = -(target.pitch - pitch) * pxPerDeg;
+      if (Math.hypot(rx, ry) <= TARGET_R) {
+        hits++; sumMs += performance.now() - spawnTime;
+        spawnTarget();
+      }
+    }
+  }
+
+  function draw() {
+    const horizonY = CY + pitch * pxPerDeg;
+    // céu / chão
+    ctx.fillStyle = '#1a2030'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#13161e'; ctx.fillRect(0, horizonY, W, H - horizonY);
+    ctx.strokeStyle = '#2e3550'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, horizonY); ctx.lineTo(W, horizonY); ctx.stroke();
+
+    // marcadores a cada 15°, rótulo a cada 45°
+    ctx.textAlign = 'center';
+    for (let d = 0; d < 360; d += 15) {
+      const rel = normRel(d - yaw);
+      if (Math.abs(rel) > HFOV / 2) continue;
+      const x = CX + rel * pxPerDeg;
+      const major = d % 45 === 0;
+      ctx.strokeStyle = major ? '#3a466a' : '#252a3a';
+      ctx.lineWidth = major ? 2 : 1;
+      ctx.beginPath(); ctx.moveTo(x, horizonY - (major ? 16 : 8)); ctx.lineTo(x, horizonY + (major ? 16 : 8)); ctx.stroke();
+      if (major) { ctx.fillStyle = '#808a9e'; ctx.font = '11px JetBrains Mono, monospace'; ctx.fillText(d + '°', x, horizonY - 22); }
+    }
+
+    // alvo
+    if (mode === 'flick' && target) {
+      const rel = normRel(target.yaw - yaw);
+      if (Math.abs(rel) <= HFOV / 2) {
+        const x = CX + rel * pxPerDeg;
+        const ty = CY - (target.pitch - pitch) * pxPerDeg;
+        ctx.fillStyle = '#ff4c4c'; ctx.beginPath(); ctx.arc(x, ty, TARGET_R, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, ty, 4, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // crosshair central
+    ctx.strokeStyle = '#00e57a'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(CX - 9, CY); ctx.lineTo(CX - 3, CY); ctx.moveTo(CX + 3, CY); ctx.lineTo(CX + 9, CY);
+    ctx.moveTo(CX, CY - 9); ctx.lineTo(CX, CY - 3); ctx.moveTo(CX, CY + 3); ctx.lineTo(CX, CY + 9);
+    ctx.stroke();
+  }
+
+  function updateHud() {
+    const dpi = getDpi(), sens = getSens();
+    const cm = (360 / (0.022 * sens)) / dpi * 2.54;
+    const cmMoved = counts / dpi * 2.54;
+    let html =
+      `<div class="stat"><div class="s-label">Direção</div><div class="s-value">${Math.round(yaw)}<span class="s-unit">°</span></div></div>` +
+      `<div class="stat"><div class="s-label">cm/360 (teórico)</div><div class="s-value">${cm.toFixed(1)}<span class="s-unit"> cm</span></div></div>` +
+      `<div class="stat"><div class="s-label">Distância movida</div><div class="s-value">${cmMoved.toFixed(1)}<span class="s-unit"> cm</span></div></div>`;
+    if (mode === 'flick') {
+      const acc = shots ? Math.round(hits / shots * 100) : 0;
+      const avg = hits ? Math.round(sumMs / hits) : 0;
+      html +=
+        `<div class="stat"><div class="s-label">Acertos</div><div class="s-value">${hits}<span class="s-unit">/${shots}</span></div></div>` +
+        `<div class="stat"><div class="s-label">Precisão</div><div class="s-value">${acc}<span class="s-unit">%</span></div></div>` +
+        `<div class="stat"><div class="s-label">Reação média</div><div class="s-value">${avg}<span class="s-unit"> ms</span></div></div>`;
+    }
+    hud.innerHTML = html;
+  }
+
+  function loop() { draw(); updateHud(); requestAnimationFrame(loop); }
+
+  overlay.addEventListener('click', () => cv.requestPointerLock());
+  document.addEventListener('pointerlockchange', () => {
+    locked = document.pointerLockElement === cv;
+    overlay.style.display = locked ? 'none' : 'flex';
+    if (locked && mode === 'flick' && !target) spawnTarget();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!locked) return;
+    const deg = 0.022 * getSens();
+    yaw = ((yaw + e.movementX * deg) % 360 + 360) % 360;
+    pitch = clamp(pitch - e.movementY * deg, -89, 89);
+    counts += Math.abs(e.movementX) + Math.abs(e.movementY);
+  });
+  document.addEventListener('mousedown', e => { if (locked && mode === 'flick') { e.preventDefault(); shoot(); } });
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('mode-free').classList.toggle('active', m === 'free');
+    document.getElementById('mode-flick').classList.toggle('active', m === 'flick');
+    hits = shots = sumMs = 0;
+    if (m === 'flick' && locked) spawnTarget(); else target = null;
+  }
+  document.getElementById('mode-free').addEventListener('click', () => setMode('free'));
+  document.getElementById('mode-flick').addEventListener('click', () => setMode('flick'));
+  document.getElementById('sim-reset').addEventListener('click', () => { yaw = pitch = 0; counts = 0; hits = shots = sumMs = 0; if (mode === 'flick' && locked) spawnTarget(); });
+
+  loop();
+})();
 </script>
 </body>
 </html>
