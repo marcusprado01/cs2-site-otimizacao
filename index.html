@@ -3,10 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Configurador NVCP para CS2: gere as configurações ideais do Painel de Controle Nvidia, launch options da Steam e estimativa de FPS conforme seu hardware. Tudo processado localmente, sem envio de dados.">
+<meta name="theme-color" content="#0d0f12">
+<meta name="color-scheme" content="dark">
 <title>NVCP CS2 — Configurador</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Configurador NVCP CS2">
+<meta property="og:description" content="Gere as configurações ideais do Painel de Controle Nvidia, launch options e estimativa de FPS para CS2.">
+<meta property="og:locale" content="pt_BR">
+
+<!-- Favicon SVG inline (zero requisições) -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230d0f12'/><path d='M9 16l5 5 9-11' fill='none' stroke='%2300e57a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+
+<!-- Fontes: preconnect + carregamento não-bloqueante -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+
+<style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -362,9 +379,78 @@
   }
 
   @media (max-width: 600px) {
-    header, main, footer { padding-left: 1.25rem; padding-right: 1.25rem; }
-    .config-table th:nth-child(3), .config-table td:nth-child(3),
-    .config-table th:nth-child(4), .config-table td:nth-child(4) { display: none; }
+    header { padding: 2rem 1.25rem 1.5rem; }
+    main   { padding: 1.5rem 1.25rem 3rem; }
+    footer { padding: 1.25rem; }
+
+    /* Formulário: coluna única + alvos de toque maiores */
+    .fields { grid-template-columns: 1fr; }
+    .field select, .field input[type="text"] {
+      padding: 12px 12px;
+      font-size: 16px; /* >=16px evita zoom automático no iOS */
+    }
+
+    .btn-generate {
+      width: 100%;
+      justify-content: center;
+      padding: 14px 24px;
+      font-size: 15px;
+    }
+
+    /* Tabela NVCP → cards empilhados (preserva todas as colunas) */
+    .config-table, .config-table tbody, .config-table tr, .config-table td { display: block; width: 100%; }
+    .config-table thead { display: none; }
+    .config-table { margin-bottom: 1.5rem; }
+
+    .config-table tr {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .config-table tr:hover td { background: transparent; }
+
+    .config-table td {
+      border: none;
+      padding: 4px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .config-table td::before {
+      content: attr(data-label);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text3);
+      flex-shrink: 0;
+    }
+    .config-table td.setting-name {
+      display: block;
+      font-weight: 500;
+      color: #fff;
+      padding-bottom: 8px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .config-table td.setting-name::before { display: none; }
+    .config-table td.note-cell { max-width: none; text-align: right; }
+    .config-table td.note-cell:empty { display: none; }
+    .impact-cell { justify-content: flex-end; }
+
+    /* FPS em 2 colunas no mobile */
+    .fps-grid { grid-template-columns: repeat(2, 1fr); }
+    .fps-card .fps-value { font-size: 18px; }
+
+    .results-header { gap: .75rem; }
+    .launch-box { font-size: 12px; padding: 12px 14px; }
+  }
+
+  @media (max-width: 360px) {
+    .fps-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -585,49 +671,39 @@ function generate() {
   document.getElementById('res-title').textContent = `${gpuModel} / ${res} / ${hz}Hz`;
 
   // NVCP table
-  const tbody = document.getElementById('nvcp-body');
-  tbody.innerHTML = '';
-  NVCP_BASE.forEach(row => {
-    const tr = document.createElement('tr');
-    let valHtml = '';
-    if (row.type === 'key')     valHtml = `<span class="val-key">${row.val}</span>`;
-    else if (row.type === 'off') valHtml = `<span class="val-off">${row.val}</span>`;
-    else if (row.type === 'warn') valHtml = `<span class="val-warn">${row.val}</span>`;
+  document.getElementById('nvcp-body').innerHTML = NVCP_BASE.map(row => {
+    let valHtml;
+    if (row.type === 'key')           valHtml = `<span class="val-key">${row.val}</span>`;
+    else if (row.type === 'off')      valHtml = `<span class="val-off">${row.val}</span>`;
+    else if (row.type === 'warn')     valHtml = `<span class="val-warn">${row.val}</span>`;
     else if (row.type === 'incompat') valHtml = `<span class="val-incompat">Não compatível</span>`;
-    else valHtml = row.val;
+    else                              valHtml = row.val;
 
     const dotClass = row.impact === 'high' ? 'dot-high' : row.impact === 'medium' ? 'dot-medium' : 'dot-low';
-    tr.innerHTML = `
-      <td class="setting-name">${row.name}</td>
-      <td class="setting-value">${valHtml}</td>
-      <td><div class="impact-cell"><span class="impact-dot ${dotClass}"></span>${impactLabel(row.impact)}</div></td>
-      <td class="note-cell">${row.note}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+    return `
+      <tr>
+        <td class="setting-name">${row.name}</td>
+        <td class="setting-value" data-label="Valor">${valHtml}</td>
+        <td data-label="Impacto"><div class="impact-cell"><span class="impact-dot ${dotClass}"></span>${impactLabel(row.impact)}</div></td>
+        <td class="note-cell" data-label="Nota">${row.note}</td>
+      </tr>`;
+  }).join('');
 
   // Launch options
   document.getElementById('launch-box').textContent = getLaunchOptions(hz, gpuSeries);
 
   // FPS
-  const fpsgrid = document.getElementById('fps-grid');
-  fpsgrid.innerHTML = '';
-  getFpsEstimate(res, gpuSeries).forEach(item => {
-    fpsgrid.innerHTML += `
+  document.getElementById('fps-grid').innerHTML = getFpsEstimate(res, gpuSeries).map(item => `
       <div class="fps-card">
         <div class="fps-label">${item.label}</div>
         <div class="fps-value">${item.fps}</div>
         <div class="fps-map">${item.sub}</div>
       </div>
-    `;
-  });
+    `).join('');
 
   // Tips
-  const tipsBox = document.getElementById('tips-box');
-  tipsBox.innerHTML = '';
-  getTips(cpu, gpuSeries, res).forEach(t => {
-    tipsBox.innerHTML += `<div class="tip">${t.text}</div>`;
-  });
+  document.getElementById('tips-box').innerHTML =
+    getTips(cpu, gpuSeries, res).map(t => `<div class="tip">${t.text}</div>`).join('');
 
   const results = document.getElementById('results');
   results.classList.add('show');
