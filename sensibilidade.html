@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Calculadora de sensibilidade do CS2: eDPI, cm/360 e in/360 em tempo real, e conversor de sensibilidade entre CS2, Valorant e Apex mantendo o mesmo cm/360. Processado localmente.">
+<meta name="theme-color" content="#0d0f12">
+<meta name="color-scheme" content="dark">
+<title>Sensibilidade CS2 — eDPI, cm/360 e Conversor</title>
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Sensibilidade CS2 — eDPI, cm/360 e Conversor">
+<meta property="og:description" content="Calcule eDPI e cm/360 e converta sua sensibilidade entre CS2, Valorant e Apex.">
+<meta property="og:locale" content="pt_BR">
+
+<!-- Favicon SVG inline -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230d0f12'/><path d='M7 22a9 9 0 0 1 18 0' fill='none' stroke='%2300e57a' stroke-width='2.5' stroke-linecap='round'/><path d='M16 22l6-6' stroke='%2300e57a' stroke-width='2.5' stroke-linecap='round'/></svg>">
+
+<!-- Fontes não-bloqueantes -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f12; --surface: #141720; --surface2: #1c2030;
+    --border: #252a3a; --border2: #2e3550;
+    --green: #00e57a; --green-dim: #00e57a22; --green-text: #00c96c;
+    --blue: #4aa3ff; --blue-dim: #4aa3ff18;
+    --text: #e8eaf0; --text2: #8892a4; --text3: #808a9e;
+    --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+  a { color: var(--green-text); text-decoration: none; }
+  a:hover { color: var(--green); }
+
+  header { padding: 2.2rem 2rem 1.5rem; max-width: 860px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+  .nav { font-family: var(--mono); font-size: 12px; margin-bottom: 1rem; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--green-text); text-transform: uppercase; margin-bottom: .6rem; }
+  h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 600; line-height: 1.15; letter-spacing: -.02em; color: #fff; }
+  h1 span { color: var(--green); }
+  .sub { margin-top: .5rem; color: var(--text2); font-size: 14px; max-width: 560px; }
+
+  main { max-width: 860px; margin: 0 auto; padding: 2rem; }
+
+  .card { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 20px; margin-bottom: 1.8rem; }
+  .section-block-title { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--green-text); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+  .section-block-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+  .field input, .field select { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: var(--sans); font-size: 14px; padding: 10px; border-radius: 6px; outline: none; }
+  .field input:focus, .field select:focus { border-color: var(--green); }
+  .field input { font-family: var(--mono); }
+
+  .results { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 1.2rem; }
+  .stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .stat .s-label { font-size: 10px; font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+  .stat .s-value { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--green); }
+  .stat .s-unit { font-size: 12px; color: var(--text3); }
+
+  .convert-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: end; }
+  .convert-arrow { font-size: 22px; color: var(--text3); padding-bottom: 8px; }
+  .convert-out { background: var(--blue-dim); border: 1px solid #4aa3ff44; border-radius: 8px; padding: 14px; text-align: center; margin-top: 1.2rem; }
+  .convert-out .co-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .convert-out .co-value { font-family: var(--mono); font-size: 26px; font-weight: 600; color: var(--blue); }
+  .convert-out .co-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+  .note { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: var(--text2); line-height: 1.6; margin-top: 1rem; }
+  .note strong { color: var(--text); }
+  .note code { font-family: var(--mono); color: var(--green-text); }
+
+  footer { border-top: 1px solid var(--border); max-width: 860px; margin: 0 auto; padding: 1.5rem 2rem; font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+  @media (max-width: 600px) {
+    header, main, footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .convert-grid { grid-template-columns: 1fr; }
+    .convert-arrow { transform: rotate(90deg); padding: 0; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav"><a href="index.html">← Configurador de performance</a> · <a href="crosshair.html">Gerador de mira</a></div>
+  <div class="eyebrow">Counter-Strike 2</div>
+  <h1>Sensibilidade <span>CS2</span></h1>
+  <p class="sub">Calcule eDPI e cm/360 e converta sua sensibilidade entre jogos mantendo a mesma distância física de giro. Tudo em tempo real, processado localmente.</p>
+</header>
+
+<main>
+
+  <!-- CALCULADORA -->
+  <div class="card">
+    <div class="section-block-title">Calculadora — eDPI e cm/360</div>
+    <div class="fields">
+      <div class="field">
+        <label for="dpi">DPI do mouse</label>
+        <input type="number" id="dpi" value="800" min="1" step="50">
+      </div>
+      <div class="field">
+        <label for="sens">Sensibilidade no CS2</label>
+        <input type="number" id="sens" value="2" min="0.01" step="0.01">
+      </div>
+    </div>
+    <div class="results" id="calc-out"></div>
+  </div>
+
+  <!-- CONVERSOR -->
+  <div class="card">
+    <div class="section-block-title">Conversor entre jogos</div>
+    <div class="convert-grid">
+      <div>
+        <div class="field" style="margin-bottom:12px">
+          <label for="from-game">De</label>
+          <select id="from-game"></select>
+        </div>
+        <div class="fields">
+          <div class="field">
+            <label for="from-sens">Sensibilidade</label>
+            <input type="number" id="from-sens" value="2" min="0.01" step="0.01">
+          </div>
+          <div class="field">
+            <label for="from-dpi">DPI</label>
+            <input type="number" id="from-dpi" value="800" min="1" step="50">
+          </div>
+        </div>
+      </div>
+      <div class="convert-arrow">→</div>
+      <div>
+        <div class="field" style="margin-bottom:12px">
+          <label for="to-game">Para</label>
+          <select id="to-game"></select>
+        </div>
+        <div class="field">
+          <label for="to-dpi">DPI (destino)</label>
+          <input type="number" id="to-dpi" value="800" min="1" step="50">
+        </div>
+      </div>
+    </div>
+    <div class="convert-out">
+      <div class="co-label">Sensibilidade equivalente</div>
+      <div class="co-value" id="conv-value">—</div>
+      <div class="co-sub" id="conv-sub"></div>
+    </div>
+    <div class="note">
+      <strong>Como funciona:</strong> a conversão iguala o <strong>cm/360</strong> (mesma distância física pra girar 360°), usando a constante de yaw de cada jogo.
+      Jogos da família Source (CS2, Apex) usam <code>0.022°/count</code> → ficam <strong>1:1 no mesmo DPI</strong>; Valorant usa ≈ <code>0.0699°/count</code> (fator <strong>3.18</strong> vs. CS2).
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Boas práticas:</strong> mantenha a velocidade do ponteiro do Windows em <code>6/11</code> (sem aceleração) e desative "Aprimorar a precisão do ponteiro" — assim o DPI do mouse vira a única variável e o cm/360 acima fica fiel. Fórmula usada: <code>cm/360 = (360 / (0.022 × sens)) / DPI × 2.54</code>.
+  </div>
+
+</main>
+
+<footer>cs2-sensitivity — cálculo local, sem envio de dados</footer>
+
+<script>
+// Constante de yaw (graus por count, a sens = 1). Família Source = 0.022.
+const GAMES = {
+  cs2:      { name: 'CS2 / CS:GO', yaw: 0.022 },
+  valorant: { name: 'Valorant',    yaw: 0.0699 },
+  apex:     { name: 'Apex Legends', yaw: 0.022 },
+};
+
+const num = id => parseFloat(document.getElementById(id).value);
+const valid = v => Number.isFinite(v) && v > 0;
+
+function counts360(yaw, sens) { return 360 / (yaw * sens); }
+function cm360(yaw, sens, dpi) { return counts360(yaw, sens) / dpi * 2.54; }
+
+// Converte mantendo a mesma distância física (cm/360):
+// yaw_b * sens_b * dpi_b = yaw_a * sens_a * dpi_a  -> resolve sens_b
+function convertSens(fromYaw, sens, fromDpi, toYaw, toDpi) {
+  return (fromYaw * sens * fromDpi) / (toYaw * toDpi);
+}
+
+function renderCalc() {
+  const dpi = num('dpi'), sens = num('sens');
+  const el = document.getElementById('calc-out');
+  if (!valid(dpi) || !valid(sens)) { el.innerHTML = '<div class="stat"><div class="s-label">—</div><div class="s-value">—</div></div>'; return; }
+  const yaw = GAMES.cs2.yaw;
+  const edpi = Math.round(dpi * sens);
+  const cm = cm360(yaw, sens, dpi);
+  const inch = cm / 2.54;
+  const counts = Math.round(counts360(yaw, sens));
+  el.innerHTML = `
+    <div class="stat"><div class="s-label">eDPI</div><div class="s-value">${edpi}</div></div>
+    <div class="stat"><div class="s-label">cm/360</div><div class="s-value">${cm.toFixed(1)}<span class="s-unit"> cm</span></div></div>
+    <div class="stat"><div class="s-label">in/360</div><div class="s-value">${inch.toFixed(2)}<span class="s-unit"> in</span></div></div>
+    <div class="stat"><div class="s-label">Counts / 360°</div><div class="s-value">${counts}</div></div>`;
+}
+
+function renderConvert() {
+  const fg = document.getElementById('from-game').value;
+  const tg = document.getElementById('to-game').value;
+  const sens = num('from-sens'), fromDpi = num('from-dpi'), toDpi = num('to-dpi');
+  const valEl = document.getElementById('conv-value');
+  const subEl = document.getElementById('conv-sub');
+  if (!valid(sens) || !valid(fromDpi) || !valid(toDpi)) { valEl.textContent = '—'; subEl.textContent = ''; return; }
+  const result = convertSens(GAMES[fg].yaw, sens, fromDpi, GAMES[tg].yaw, toDpi);
+  const cm = cm360(GAMES[tg].yaw, result, toDpi);
+  valEl.textContent = result.toFixed(3);
+  subEl.textContent = `${GAMES[tg].name} · ${cm.toFixed(1)} cm/360 (igual à origem)`;
+}
+
+// Popula selects
+(() => {
+  const opts = Object.entries(GAMES).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
+  const from = document.getElementById('from-game'), to = document.getElementById('to-game');
+  from.innerHTML = opts; to.innerHTML = opts;
+  from.value = 'cs2'; to.value = 'valorant';
+})();
+
+['dpi', 'sens'].forEach(id => document.getElementById(id).addEventListener('input', renderCalc));
+['from-game', 'to-game', 'from-sens', 'from-dpi', 'to-dpi'].forEach(id =>
+  document.getElementById(id).addEventListener('input', renderConvert));
+
+renderCalc();
+renderConvert();
+</script>
+</body>
+</html>
